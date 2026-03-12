@@ -245,7 +245,14 @@
                     <input type="hidden" id="entry-id" name="id">
                     <div class="form-group">
                         <label for="category">ジャンル</label>
-                        <input type="text" id="category" name="category" placeholder="例：参加資格について" required>
+                        <select id="category" name="category" required
+                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <option value="">ジャンルを選択してください</option>
+                            <option value="参加資格について">参加資格について</option>
+                            <option value="作品について">作品について</option>
+                            <option value="審査について">審査について</option>
+                            <option value="その他">その他</option>
+                        </select>
                     </div>
                     <!-- 簡易的にカテゴリIDは1としておくなど。本格運用時はマスタ管理 -->
                     <input type="hidden" id="category_id" name="category_id" value="1">

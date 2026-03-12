@@ -159,7 +159,17 @@ async function handleFormSubmit(e) {
     const answer = document.getElementById('answer').value;
 
     const method = id ? 'PUT' : 'POST';
-    const payload = { id, category, question, answer, category_id: 1 };
+
+    // Assign category_id based on selection
+    const categoryMap = {
+        '参加資格について': 1,
+        '作品について': 2,
+        '審査について': 3,
+        'その他': 4
+    };
+    const category_id = categoryMap[category] || 99;
+
+    const payload = { id, category, question, answer, category_id };
 
     try {
         const response = await fetch('/api/qa', {
