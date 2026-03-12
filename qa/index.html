@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>U-16 SHIZUOKA Q&A | よくあるご質問</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        .qa-container {
+            margin-top: 100px;
+            padding-bottom: 100px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 10px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            font-weight: 700;
+        }
+
+        /* QA List */
+        .qa-list {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .qa-list.active {
+            display: flex;
+        }
+
+        .qa-item {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .qa-question {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: var(--secondary);
+            transition: background 0.3s ease;
+        }
+
+        .qa-question:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .qa-question::after {
+            content: '+';
+            font-size: 1.5rem;
+            color: var(--text-dim);
+            transition: transform 0.3s ease;
+        }
+
+        .qa-item.open .qa-question::after {
+            transform: rotate(45deg);
+            color: var(--primary);
+        }
+
+        .qa-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            padding: 0 20px;
+            color: var(--text-main);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .qa-item.open .qa-answer {
+            padding: 20px;
+            max-height: 500px;
+            /* Arbitrary large number */
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .loading,
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <header id="main-header" style="background: rgba(10, 11, 30, 0.95); padding: 15px 0;">
+        <div class="container">
+            <div class="logo">
+                <a href="../index.html" style="text-decoration: none; display: flex; align-items: center; gap:15px;">
+                    <img src="../logo.png" alt="Logo" style="height: 40px;">
+                    <span
+                        style="font-weight: 800; font-size: 1.2rem; background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">U-16
+                        SHIZUOKA</span>
+                </a>
+            </div>
+            <nav>
+                <ul style="align-items: center;">
+                    <li><a href="../index.html">ホームに戻る</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="qa-container container">
+        <div class="section-title">
+            <span class="subtitle">Q&A</span>
+            <h2>よくあるご質問</h2>
+            <div class="title-line"></div>
+        </div>
+
+        <div id="qa-content">
+            <div class="loading">Q&Aデータを読み込み中...</div>
+        </div>
+    </main>
+
+    <footer style="margin-top: 50px;">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 U-16 Programming Contest Shizuoka. All Rights Reserved.</p>
+                <a href="../admin/index.html"
+                    style="font-size: 0.75rem; color: var(--text-dim); opacity: 0.6; text-decoration: none; display: block; margin-top: 15px;">AdminMenu</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="qa.js"></script>
+</body>
+
+</html>

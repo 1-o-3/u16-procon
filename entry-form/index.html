@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品エントリー | U-16プログラミングコンテスト 静岡大会</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        .entry-container {
+            margin-top: 100px;
+            padding-bottom: 100px;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+        }
+
+        .form-section h3 {
+            border-left: 4px solid var(--secondary);
+            padding-left: 15px;
+            margin-bottom: 25px;
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+    <header id="main-header" style="background: rgba(10, 11, 30, 0.95); padding: 15px 0;">
+        <div class="container">
+            <div class="logo">
+                <a href="../index.html" style="text-decoration: none; display: flex; align-items: center; gap:15px;">
+                    <img src="../logo.png" alt="Logo" style="height: 40px;">
+                    <span
+                        style="font-weight: 800; font-size: 1.2rem; background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">U-16
+                        SHIZUOKA</span>
+                </a>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="../index.html">ホームに戻る</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="entry-container container">
+        <div class="section-title">
+            <span class="subtitle">ENTRY FORM</span>
+            <h2>参加申し込み</h2>
+            <div class="title-line"></div>
+        </div>
+
+        <div class="contact-form-wrapper glass" id="form-container">
+            <form id="entry-form">
+                <div class="form-section">
+                    <h3>1. 参加者情報</h3>
+                    <div class="form-group">
+                        <label for="name">氏名</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="school">学校名・学年</label>
+                        <input type="text" id="school" name="school" placeholder="例：〇〇市立第△中学校 2年" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">メールアドレス</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>2. 応募作品情報</h3>
+                    <div class="form-group">
+                        <label for="division">応募部門</label>
+                        <select id="division" name="division" required>
+                            <option value="" disabled selected>選択してください</option>
+                            <option value="中学生部門">中学生部門</option>
+                            <option value="高校生部門">高校生部門</option>
+                            <option value="エンタメ部門">エンタメ部門</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="title">作品タイトル</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">作品の概要</label>
+                        <textarea id="description" name="description" rows="5" required></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="confirm-btn" class="btn-glow">入力内容の確認</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Confirmation View -->
+        <div id="confirmation-view" class="glass" style="display: none;">
+            <h3>入力内容の確認</h3>
+            <div class="confirm-item"><strong>お名前:</strong> <span id="confirm-name"></span></div>
+            <div class="confirm-item"><strong>学校・学年:</strong> <span id="confirm-school"></span></div>
+            <div class="confirm-item"><strong>アドレス:</strong> <span id="confirm-email"></span></div>
+            <div class="confirm-item"><strong>部門:</strong> <span id="confirm-division"></span></div>
+            <div class="confirm-item"><strong>作品名:</strong> <span id="confirm-title"></span></div>
+            <div class="confirm-item"><strong>概要:</strong>
+                <pre id="confirm-description"></pre>
+            </div>
+
+            <div class="form-actions" style="margin-top: 30px;">
+                <button type="button" id="back-btn" class="btn-outline">修正する</button>
+                <button type="button" id="submit-btn" class="btn-glow">この内容で申し込む</button>
+            </div>
+        </div>
+
+        <div id="success-view" class="glass" style="display: none; text-align: center;">
+            <h3>申し込みを受け付けました</h3>
+            <p>ご登録いただいたメールアドレスに確認メールを送信しました。<br>大会事務局にて内容を確認させていただきます。</p>
+            <a href="../index.html" class="btn-outline" style="margin-top: 20px; display: inline-block;">ホームに戻る</a>
+        </div>
+    </main>
+
+    <footer style="margin-top: 50px;">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 U-16 Programming Contest Shizuoka. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="entry.js"></script>
+</body>
+
+</html>
