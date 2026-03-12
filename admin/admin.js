@@ -1,25 +1,33 @@
 document.addEventListener('DOMContentLoaded', () => {
-    fetchQAData();
+    // Check login state (simple session storage)
+    if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
+        showAdminPanel();
+    }
 
-    // Logout logic for Basic Auth
+    // Login Form logic
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('login-id').value;
+            const pass = document.getElementById('login-pass').value;
+
+            if (id === 'u16shizuoka' && pass === 'u16shizuoka') {
+                sessionStorage.setItem('isAdminLoggedIn', 'true');
+                showAdminPanel();
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+            }
+        });
+    }
+
+    // Logout logic
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
-
-            // XHRやfetchで別ドメイン扱いにならないよう、
-            // 偽の認証情報を付けて再度管理画面(またはトップ)にアクセスさせ、エラーを起こしてキャッシュ上書きする
-            alert("ログアウトしました。（完全にログアウトするには念のためブラウザのタブを閉じてください）");
-
-            // ログアウト用の一時的な401エラーページ（今回は/api/qaでエラーを起こす）
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', '/api/qa', false, 'logout', 'logout');
-            try {
-                xhr.send('');
-            } catch (err) { }
-
-            // その後トップページへ
-            window.location.href = '../index.html';
+            sessionStorage.removeItem('isAdminLoggedIn');
+            window.location.reload();
         });
     }
 
@@ -27,6 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cancel-btn').addEventListener('click', closeModal);
     document.getElementById('qa-form').addEventListener('submit', handleFormSubmit);
 });
+
+function showAdminPanel() {
+    const overlay = document.getElementById('login-overlay');
+    const main = document.getElementById('admin-main-content');
+    if (overlay) overlay.style.display = 'none';
+    if (main) main.style.display = 'block';
+    fetchQAData();
+}
 
 let qaData = [];
 
