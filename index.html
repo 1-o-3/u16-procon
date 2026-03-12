@@ -29,7 +29,8 @@
                     <li><a href="#past">過去の開催情報</a></li>
                     <li><a href="#other">他所での開催</a></li>
                     <li><a href="#sns">SNS</a></li>
-                    <li><a href="#contact" class="btn-primary">お問い合わせ</a></li>
+                    <li><a href="https://forms.gle/92aPXY5QAf1Min1u7" target="_blank" class="btn-primary">お問い合わせ</a>
+                    </li>
                 </ul>
             </nav>
         </div>
@@ -130,73 +131,7 @@
             </div>
         </section>
 
-        <section id="contact" class="section">
-            <div class="container">
-                <div class="section-title">
-                    <span class="subtitle">CONTACT</span>
-                    <h2>お問い合わせ</h2>
-                    <div class="title-line"></div>
-                </div>
 
-                <div class="contact-form-wrapper glass" id="form-container">
-                    <form id="contact-form">
-                        <div class="form-group">
-                            <label for="genre">ジャンル</label>
-                            <select id="genre" name="genre" required>
-                                <option value="" disabled selected>選択してください</option>
-                                <option value="参加検討">参加検討</option>
-                                <option value="協賛・後援募集">協賛・後援募集</option>
-                                <option value="その他">その他</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="name">お名前</label>
-                            <input type="text" id="name" name="name" placeholder="氏名を入力" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">返信用アドレス</label>
-                            <input type="email" id="email" name="email" placeholder="example@gmail.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="subject">件名</label>
-                            <input type="text" id="subject" name="subject" placeholder="件名を入力" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="message">本文</label>
-                            <textarea id="message" name="message" rows="8" placeholder="お問い合わせ内容を入力"
-                                required></textarea>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" id="confirm-btn" class="btn-glow">入力内容の確認</button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- 確認画面（初期は非表示） -->
-                <div id="confirmation-view" class="glass" style="display: none;">
-                    <h3>入力内容の確認</h3>
-                    <div class="confirm-item"><strong>ジャンル:</strong> <span id="confirm-genre"></span></div>
-                    <div class="confirm-item"><strong>お名前:</strong> <span id="confirm-name"></span></div>
-                    <div class="confirm-item"><strong>返信用アドレス:</strong> <span id="confirm-email"></span></div>
-                    <div class="confirm-item"><strong>件名:</strong> <span id="confirm-subject"></span></div>
-                    <div class="confirm-item"><strong>本文:</strong>
-                        <pre id="confirm-message"></pre>
-                    </div>
-                    <div class="form-actions" style="margin-top: 30px;">
-                        <button type="button" id="back-btn" class="btn-outline">修正する</button>
-                        <button type="button" id="submit-btn" class="btn-glow">送信する</button>
-                    </div>
-                </div>
-
-                <!-- 完了画面（初期は非表示） -->
-                <div id="success-view" class="glass" style="display: none; text-align: center;">
-                    <h3>お問い合わせが完了しました</h3>
-                    <p>返信用アドレスに確認メールを送信しました。<br>内容を確認後、順次返信いたします。</p>
-                    <button type="button" onclick="location.reload()" class="btn-outline"
-                        style="margin-top: 20px;">閉じる</button>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer>
@@ -214,6 +149,7 @@
                             <li><a href="docs/U-16 SHIZUOKA大会規約.pdf" target="_blank">大会規約</a></li>
                             <li><a href="docs/U-16 SHIZUOKA プライバシーポリシー.pdf" target="_blank">プライバシーポリシー</a></li>
                             <li><a href="qa/index.html">よくあるご質問</a></li>
+                            <li><a href="https://forms.gle/92aPXY5QAf1Min1u7" target="_blank">お問い合わせはコチラから</a></li>
                         </ul>
                     </div>
                 </div>
