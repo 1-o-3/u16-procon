@@ -40,42 +40,38 @@ backBtn.addEventListener('click', () => {
     formContainer.style.display = 'block';
 });
 
-submitBtn.addEventListener('click', () => {
+submitBtn.addEventListener('click', async () => {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '送信中...';
+
     const formData = new FormData(contactForm);
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
+    const payload = {
+        genre: formData.get('genre'),
+        name: formData.get('name'),
+        email: formData.get('email'),
+        subject: formData.get('subject'),
+        message: formData.get('message')
+    };
 
-    // Constructing the terminal logs to simulate the email logic requested
-    console.log("%c--- Sending Email to u16.shizuoka@gmail.com ---", "color: #00d2ff; font-weight: bold;");
-    console.log(`Subject: ${formData.get('genre')}`);
-    console.log(`From: ${formData.get('email')}`);
-    console.log(`Body:\n【${formData.get('name')}】様からのお問い合わせ\n${formData.get('subject')}\n\n${formData.get('message')}`);
+    try {
+        const response = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    console.log("%c--- Sending Confirmation to " + formData.get('email') + " ---", "color: #00a86b; font-weight: bold;");
-    const autoReplyBody = `
-${formData.get('name')} 様　お問い合わせありがとうございます
-以下の内容でお問い合わせを承りました
+        if (!response.ok) throw new Error('送信に失敗しました');
 
-ーーーーーーーーーーーーーーーーーーーーーーーー
+        // Show success
+        confirmationView.style.display = 'none';
+        successView.style.display = 'block';
+        window.scrollTo({ top: successView.offsetTop - 100, behavior: 'smooth' });
 
-お問い合わせ日：${dateStr}
-ジャンル：${formData.get('genre')}
-件名：${formData.get('subject')}
-本文：
-${formData.get('message')}
-
-ーーーーーーーーーーーーーーーーーーーーーーーー
-
-順次返信いたしますので、しばらくお待ちください
-
-
-U-16プログラミングコンテスト静岡大会 実行委員会`;
-    console.log("Subject: お問い合わせが完了しました");
-    console.log("Body:" + autoReplyBody);
-
-    // Show success
-    confirmationView.style.display = 'none';
-    successView.style.display = 'block';
+    } catch (error) {
+        alert('エラー: ' + error.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = '送信する';
+    }
 });
 
 // Header scroll effect

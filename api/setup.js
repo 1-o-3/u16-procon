@@ -2,7 +2,7 @@ import { sql } from '@vercel/postgres';
 
 export default async function handler(request, response) {
     try {
-        // Create table
+        // Create QA table
         await sql`
             CREATE TABLE IF NOT EXISTS qa_table (
                 id SERIAL PRIMARY KEY,
@@ -10,6 +10,19 @@ export default async function handler(request, response) {
                 category_id INTEGER NOT NULL,
                 question TEXT NOT NULL,
                 answer TEXT NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
+
+        // Create Inquiries table
+        await sql`
+            CREATE TABLE IF NOT EXISTS inquiries_table (
+                id SERIAL PRIMARY KEY,
+                genre VARCHAR(255) NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `;
