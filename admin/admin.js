@@ -1,6 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
     fetchQAData();
 
+    // Logout logic for Basic Auth
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // This forces the browser to overwrite the cached Basic Auth credentials with invalid ones
+            const url = window.location.protocol + '//logout:logout@' + window.location.host + '/';
+            // Also attempt an XHR with wrong credentials just in case
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/qa', true, 'logout', 'logout');
+            xhr.send('');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    window.location.href = '../index.html';
+                }
+            };
+            // Fallback redirect if XHR takes too long
+            setTimeout(() => { window.location.href = '../index.html'; }, 500);
+        });
+    }
+
     document.getElementById('add-new-btn').addEventListener('click', openAddModal);
     document.getElementById('cancel-btn').addEventListener('click', closeModal);
     document.getElementById('qa-form').addEventListener('submit', handleFormSubmit);
