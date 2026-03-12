@@ -6,19 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // This forces the browser to overwrite the cached Basic Auth credentials with invalid ones
-            const url = window.location.protocol + '//logout:logout@' + window.location.host + '/';
-            // Also attempt an XHR with wrong credentials just in case
+
+            // XHRやfetchで別ドメイン扱いにならないよう、
+            // 偽の認証情報を付けて再度管理画面(またはトップ)にアクセスさせ、エラーを起こしてキャッシュ上書きする
+            alert("ログアウトしました。（完全にログアウトするには念のためブラウザのタブを閉じてください）");
+
+            // ログアウト用の一時的な401エラーページ（今回は/api/qaでエラーを起こす）
             const xhr = new XMLHttpRequest();
-            xhr.open('GET', '/api/qa', true, 'logout', 'logout');
-            xhr.send('');
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    window.location.href = '../index.html';
-                }
-            };
-            // Fallback redirect if XHR takes too long
-            setTimeout(() => { window.location.href = '../index.html'; }, 500);
+            xhr.open('GET', '/api/qa', false, 'logout', 'logout');
+            try {
+                xhr.send('');
+            } catch (err) { }
+
+            // その後トップページへ
+            window.location.href = '../index.html';
         });
     }
 
