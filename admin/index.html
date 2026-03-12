@@ -116,154 +116,90 @@
             color: #ff4b4b;
             display: block;
         }
-
-        /* Login Overlay */
-        #login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-dark);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .login-box {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--glass-border);
-            padding: 40px;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .login-box h2 {
-            margin-bottom: 20px;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        #admin-main-content {
-            display: none;
-            /* Hidden until logged in */
-        }
     </style>
 </head>
 
 <body>
-    <!-- Login Screen -->
-    <div id="login-overlay">
-        <div class="login-box glass">
-            <h2>Admin Login</h2>
-            <p style="color: var(--text-dim); margin-bottom: 20px; font-size: 0.9rem;">管理画面にアクセスするにはログインしてください。</p>
-            <form id="login-form">
-                <div class="form-group" style="text-align: left;">
-                    <label for="login-id">ID</label>
-                    <input type="text" id="login-id" required>
-                </div>
-                <div class="form-group" style="text-align: left; margin-bottom: 30px;">
-                    <label for="login-pass">パスワード</label>
-                    <input type="password" id="login-pass" required>
-                </div>
-                <div id="login-error" style="color: #ff4b4b; margin-bottom: 15px; font-size: 0.85rem; display: none;">
-                    IDまたはパスワードが違います</div>
-                <button type="submit" class="btn-glow" style="width: 100%;">ログイン</button>
-            </form>
-            <div style="margin-top: 20px;">
-                <a href="../qa/index.html" style="color: var(--text-dim); font-size: 0.8rem;">Q&Aページに戻る</a>
+    <header id="main-header" style="background: rgba(10, 11, 30, 0.95); padding: 15px 0;">
+        <div class="container">
+            <div class="logo">
+                <a href="../index.html" style="text-decoration: none; display: flex; align-items: center; gap:15px;">
+                    <img src="../logo.png" alt="Logo" style="height: 40px;">
+                    <span
+                        style="font-weight: 800; font-size: 1.2rem; background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">U-16
+                        ADMIN</span>
+                </a>
             </div>
+            <nav>
+                <ul style="align-items: center;">
+                    <li><a href="../qa/index.html">Q&Aページを見る</a></li>
+                    <li><a href="../index.html">ホームに戻る</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="admin-container container">
+        <div class="section-title">
+            <span class="subtitle">DASHBOARD</span>
+            <h2>Q&A 管理</h2>
+            <div class="title-line"></div>
+        </div>
+
+        <div class="glass" style="margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>登録済みのQ&A一覧</h3>
+                <button id="add-new-btn" class="btn-glow">新規追加</button>
+            </div>
+            <div id="status-container"></div>
+
+            <div style="overflow-x: auto;">
+                <table id="qa-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">ID</th>
+                            <th style="width: 150px;">ジャンル</th>
+                            <th>質問</th>
+                            <th style="width: 120px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="qa-tbody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-dim);">読み込み中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal" id="qa-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Q&Aの追加</h3>
+            <form id="qa-form">
+                <input type="hidden" id="entry-id" name="id">
+                <div class="form-group">
+                    <label for="category">ジャンル</label>
+                    <input type="text" id="category" name="category" placeholder="例：参加資格について" required>
+                </div>
+                <!-- 簡易的にカテゴリIDは1としておくなど。本格運用時はマスタ管理 -->
+                <input type="hidden" id="category_id" name="category_id" value="1">
+                <div class="form-group">
+                    <label for="question">質問</label>
+                    <input type="text" id="question" name="question" required>
+                </div>
+                <div class="form-group">
+                    <label for="answer">回答・解決法</label>
+                    <textarea id="answer" name="answer" rows="5" required></textarea>
+                </div>
+                <div class="form-actions" style="margin-top: 30px;">
+                    <button type="button" id="cancel-btn" class="btn-outline">キャンセル</button>
+                    <button type="submit" class="btn-glow">保存する</button>
+                </div>
+            </form>
         </div>
     </div>
-
-    <div id="admin-main-content">
-        <header id="main-header" style="background: rgba(10, 11, 30, 0.95); padding: 15px 0;">
-            <div class="container">
-                <div class="logo">
-                    <a href="../index.html"
-                        style="text-decoration: none; display: flex; align-items: center; gap:15px;">
-                        <img src="../logo.png" alt="Logo" style="height: 40px;">
-                        <span
-                            style="font-weight: 800; font-size: 1.2rem; background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">U-16
-                            ADMIN</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul style="align-items: center;">
-                        <li><a href="../qa/index.html">Q&Aページを見る</a></li>
-                        <li><a href="../index.html">ホームに戻る</a></li>
-                    </ul>
-                </nav>
-            </div>
-        </header>
-
-        <main class="admin-container container">
-            <div class="section-title">
-                <span class="subtitle">DASHBOARD</span>
-                <h2>Q&A 管理</h2>
-                <div class="title-line"></div>
-            </div>
-
-            <div class="glass" style="margin-bottom: 30px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>登録済みのQ&A一覧</h3>
-                    <button id="add-new-btn" class="btn-glow">新規追加</button>
-                </div>
-                <div id="status-container"></div>
-
-                <div style="overflow-x: auto;">
-                    <table id="qa-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 50px;">ID</th>
-                                <th style="width: 150px;">ジャンル</th>
-                                <th>質問</th>
-                                <th style="width: 120px;">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="qa-tbody">
-                            <tr>
-                                <td colspan="4" style="text-align: center; color: var(--text-dim);">読み込み中...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
-
-        <!-- Add/Edit Modal -->
-        <div class="modal" id="qa-modal">
-            <div class="modal-content">
-                <h3 id="modal-title">Q&Aの追加</h3>
-                <form id="qa-form">
-                    <input type="hidden" id="entry-id" name="id">
-                    <div class="form-group">
-                        <label for="category">ジャンル</label>
-                        <input type="text" id="category" name="category" placeholder="例：参加資格について" required>
-                    </div>
-                    <!-- 簡易的にカテゴリIDは1としておくなど。本格運用時はマスタ管理 -->
-                    <input type="hidden" id="category_id" name="category_id" value="1">
-                    <div class="form-group">
-                        <label for="question">質問</label>
-                        <input type="text" id="question" name="question" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="answer">回答・解決法</label>
-                        <textarea id="answer" name="answer" rows="5" required></textarea>
-                    </div>
-                    <div class="form-actions" style="margin-top: 30px;">
-                        <button type="button" id="cancel-btn" class="btn-outline">キャンセル</button>
-                        <button type="submit" class="btn-glow">保存する</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div> <!-- Close admin-main-content -->
 
     <script src="admin.js"></script>
 </body>

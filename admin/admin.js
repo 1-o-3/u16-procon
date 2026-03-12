@@ -1,33 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Check login state (simple session storage)
-    if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
-        showAdminPanel();
-    }
-
-    // Login Form logic
-    document.getElementById('login-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const id = document.getElementById('login-id').value;
-        const pass = document.getElementById('login-pass').value;
-
-        if (id === 'u16shizuoka' && pass === 'u16shizuoka') {
-            sessionStorage.setItem('isAdminLoggedIn', 'true');
-            showAdminPanel();
-        } else {
-            document.getElementById('login-error').style.display = 'block';
-        }
-    });
+    fetchQAData();
 
     document.getElementById('add-new-btn').addEventListener('click', openAddModal);
     document.getElementById('cancel-btn').addEventListener('click', closeModal);
     document.getElementById('qa-form').addEventListener('submit', handleFormSubmit);
 });
-
-function showAdminPanel() {
-    document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('admin-main-content').style.display = 'block';
-    fetchQAData();
-}
 
 let qaData = [];
 
