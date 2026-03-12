@@ -163,9 +163,12 @@ async function handleFormSubmit(e) {
     // Assign category_id based on selection
     const categoryMap = {
         '参加資格について': 1,
-        '作品について': 2,
-        '審査について': 3,
-        'その他': 4
+        '部門全体について': 2,
+        '競技部門について': 3,
+        '作品部門について': 4,
+        '審査について': 5,
+        '大会当日について': 6,
+        'その他': 7
     };
     const category_id = categoryMap[category] || 99;
 
