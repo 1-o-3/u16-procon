@@ -131,3 +131,85 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">お知らせの読み込みに失敗しました。</p>';
     }
 });
+
+// Fetch Fixed Data (ABOUT, CLASS, SNS)
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        let fixedData = [];
+        try {
+            const response = await fetch('/api/fixed');
+            if (response.ok) {
+                fixedData = await response.json();
+            } else {
+                throw new Error();
+            }
+        } catch (e) {
+            console.log("Using local mock data for fixed content");
+            const local = localStorage.getItem('mockFixedData');
+            if (local) {
+                fixedData = JSON.parse(local);
+            }
+        }
+
+        fixedData.forEach(item => {
+            if (item.category === 'ABOUT' && item.content) {
+                const aboutEl = document.getElementById('hp-about-content');
+                if (aboutEl) aboutEl.innerHTML = item.content;
+            } else if (item.category === 'CLASS_COMP') {
+                const titleEl = document.getElementById('hp-class-comp-title');
+                const contentEl = document.getElementById('hp-class-comp-content');
+                const imgContainer = document.getElementById('hp-class-comp-img-container');
+                
+                if (titleEl && item.title) titleEl.textContent = item.title;
+                if (contentEl && item.content) {
+                    contentEl.innerHTML = item.content;
+                    if (item.link) {
+                        contentEl.innerHTML += `<div style="margin-top: 15px;"><a href="${item.link}" target="_blank" class="btn-outline" style="padding: 8px 15px; font-size: 0.85rem;">もっと詳しく</a></div>`;
+                    }
+                }
+                if (imgContainer && item.image) {
+                    imgContainer.innerHTML = `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
+                    imgContainer.style.border = 'none';
+                }
+            } else if (item.category === 'CLASS_WORK') {
+                const titleEl = document.getElementById('hp-class-work-title');
+                const contentEl = document.getElementById('hp-class-work-content');
+                const imgContainer = document.getElementById('hp-class-work-img-container');
+                
+                if (titleEl && item.title) titleEl.textContent = item.title;
+                if (contentEl && item.content) {
+                    contentEl.innerHTML = item.content;
+                    if (item.link) {
+                        contentEl.innerHTML += `<div style="margin-top: 15px;"><a href="${item.link}" target="_blank" class="btn-outline" style="padding: 8px 15px; font-size: 0.85rem;">もっと詳しく</a></div>`;
+                    }
+                }
+                if (imgContainer && item.image) {
+                    imgContainer.innerHTML = `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
+                    imgContainer.style.border = 'none';
+                }
+            } else if (item.category === 'SNS' && item.sns_data) {
+                const snsContainer = document.getElementById('hp-sns-container');
+                if (snsContainer) {
+                    let snsObj = item.sns_data;
+                    if (typeof snsObj === 'string') snsObj = JSON.parse(snsObj);
+                    
+                    let html = `<div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">`;
+                    if (snsObj.x && snsObj.x.link) {
+                        html += `<a href="${snsObj.x.link}" target="_blank" class="btn-outline" style="border-color: #1DA1F2; color: white;">𝕏 ${snsObj.x.id ? '(@' + snsObj.x.id + ')' : ''}</a>`;
+                    }
+                    if (snsObj.insta && snsObj.insta.link) {
+                        html += `<a href="${snsObj.insta.link}" target="_blank" class="btn-outline" style="border-color: #E1306C; color: white;">Instagram ${snsObj.insta.id ? '(@' + snsObj.insta.id + ')' : ''}</a>`;
+                    }
+                    if (snsObj.youtube && snsObj.youtube.link) {
+                        html += `<a href="${snsObj.youtube.link}" target="_blank" class="btn-outline" style="border-color: #FF0000; color: white;">YouTube ${snsObj.youtube.id ? '(' + snsObj.youtube.id + ')' : ''}</a>`;
+                    }
+                    html += `</div>`;
+                    snsContainer.innerHTML = html;
+                }
+            }
+        });
+
+    } catch (e) {
+        console.error("Failed to load fixed content", e);
+    }
+});
