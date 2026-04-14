@@ -181,6 +181,7 @@ nav a:hover {
 }
 
 .btn-outline {
+    background: transparent;
     border: 2px solid var(--glass-border);
     color: white;
 }

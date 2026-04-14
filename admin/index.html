@@ -153,6 +153,62 @@
             display: none;
             /* Hidden until logged in */
         }
+
+        .admin-tabs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+        }
+
+        .admin-tab {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .admin-tab.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+        }
+
+        .admin-pane {
+            display: none;
+        }
+
+        .admin-pane.active {
+            display: block;
+        }
+
+        .news-category-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .news-tab {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-dim);
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .news-tab.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-color: var(--primary);
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -204,35 +260,246 @@
         </header>
 
         <main class="admin-container container">
-            <div class="section-title">
-                <span class="subtitle">DASHBOARD</span>
-                <h2>Q&A 管理</h2>
-                <div class="title-line"></div>
+
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-target="tab-qa">Q&A 管理</button>
+                <button class="admin-tab" data-target="tab-news">記事投稿 (動的)</button>
+                <button class="admin-tab" data-target="tab-fixed">固定箇所編集</button>
             </div>
 
-            <div class="glass" style="margin-bottom: 30px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>登録済みのQ&A一覧</h3>
-                    <button id="add-new-btn" class="btn-glow">新規追加</button>
-                </div>
-                <div id="status-container"></div>
+            <div id="tab-qa" class="admin-pane active">
+                <div class="glass" style="margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>登録済みのQ&A一覧</h3>
+                        <button id="add-new-btn" class="btn-glow">新規追加</button>
+                    </div>
+                    <div id="status-container"></div>
 
-                <div style="overflow-x: auto;">
-                    <table id="qa-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 50px;">ID</th>
-                                <th style="width: 150px;">ジャンル</th>
-                                <th>質問</th>
-                                <th style="width: 120px;">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="qa-tbody">
-                            <tr>
-                                <td colspan="4" style="text-align: center; color: var(--text-dim);">読み込み中...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div style="overflow-x: auto;">
+                        <table id="qa-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">ID</th>
+                                    <th style="width: 150px;">ジャンル</th>
+                                    <th>質問</th>
+                                    <th style="width: 120px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="qa-tbody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: var(--text-dim);">読み込み中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-news" class="admin-pane">
+                <div class="glass" style="margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>記事投稿・管理</h3>
+                        <div>
+                            <select id="news-category-select" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000000; cursor: pointer; font-weight: 600;">
+                                <option value="お知らせ">お知らせ</option>
+                                <option value="今期の開催情報">今期の開催情報</option>
+                                <option value="過去の開催情報">過去の開催情報 (今期からの移行管理)</option>
+                                <option value="他所での開催">他所での開催</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <p id="news-form-title" style="color: var(--primary); font-weight: 600; margin-bottom: 20px; font-size: 1.1rem;">📝 <span id="current-news-category">お知らせ</span> へ投稿します</p>
+                    <p id="past-notice-msg" style="color: var(--text-dim); margin-bottom: 20px; display: none;">※ 今期開催された大会を選び、「大会の様子」の画像を追加することで過去の記録としてアーカイブできます。</p>
+                    
+                    <form id="news-form">
+                        <input type="hidden" id="news-id" name="news-id">
+                        <div class="form-group field-migration" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label for="news-migration-select" style="display: block; margin-bottom: 5px;">アーカイブする大会を選択</label>
+                            <select id="news-migration-select" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                                <option value="">大会を選択してください...</option>
+                            </select>
+                            <div id="migration-preview-box" style="display: none; padding: 15px; background: rgba(255,255,255,0.02); border: 1px dashed var(--glass-border); border-radius: 8px; margin-top: 15px; font-size: 0.95rem; line-height: 1.5; color: var(--text-dim);"> 
+                                <!-- Read-only preview injected here -->
+                            </div>
+                        </div>
+
+                        <div class="form-group field-common" style="margin-bottom: 15px; text-align: left;">
+                            <label for="news-title" style="display: block; margin-bottom: 5px;">タイトル</label>
+                            <input type="text" id="news-title" placeholder="記事のタイトルを入力" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;" required>
+                        </div>
+                        
+                        <div class="form-group field-prefecture" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label for="news-prefecture" style="display: block; margin-bottom: 5px;">開催都道府県</label>
+                            <input type="text" id="news-prefecture" placeholder="例：静岡県" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                        </div>
+
+                        <div class="form-group field-dates" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label style="display: block; margin-bottom: 5px;">開催日 <span id="news-auto-migrate-text" style="font-size: 0.8rem; color: var(--text-dim);">（当日の日付を過ぎると自動で過去の記事へ移動します）</span></label>
+                            <div style="display: flex; gap: 10px; align-items: center; color: white; margin-bottom: 10px;">
+                                <input type="date" id="news-start-date" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000;">
+                            </div>
+                            <div class="field-time-tentative">
+                                <label style="display: block; margin-bottom: 5px; margin-top: 10px;">時間</label>
+                                <div style="display: flex; gap: 10px; align-items: center; color: white; margin-bottom: 15px;">
+                                    <input type="time" id="news-start-time" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000;">
+                                    ～ 
+                                    <input type="time" id="news-end-time" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000;">
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 8px; color: white; margin: 0; cursor: pointer; font-size: 0.95rem;">
+                                    <input type="checkbox" id="news-is-tentative" value="true" style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 予定（日時や場所が未確定・予定の段階の場合にチェック）
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group field-location" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label for="news-location" style="display: block; margin-bottom: 5px;">開催地・施設名</label>
+                            <input type="text" id="news-location" placeholder="例：静岡大学 浜松キャンパス" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                        </div>
+
+                        <div class="form-group field-map-url" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label for="news-map-url" style="display: block; margin-bottom: 5px;">URL (Google Mapのハイパーリンク)</label>
+                            <input type="url" id="news-map-url" placeholder="https://goo.gl/maps/..." style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                        </div>
+
+                        <div class="form-group field-application" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label for="news-application-url" style="display: block; margin-bottom: 5px;">大会申し込みURL (※過去記事には表示されません)</label>
+                            <input type="url" id="news-application-url" placeholder="https://forms.gle/..." style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                        </div>
+
+                        <div class="form-group field-overview-url" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label for="news-overview-url" style="display: block; margin-bottom: 5px;">大会概要のURL</label>
+                            <input type="url" id="news-overview-url" placeholder="https://example.com/overview" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                        </div>
+
+                        <div class="form-group field-content" style="margin-bottom: 15px; text-align: left;">
+                            <label id="news-content-label" for="news-content" style="display: block; margin-bottom: 5px;">本文 / 概要</label>
+                            <textarea id="news-content" rows="6" placeholder="記事の本文や概要を入力" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;" required></textarea>
+                        </div>
+                        
+                        <div class="form-group field-participants-group" style="display: none; gap: 15px; margin-bottom: 15px; text-align: left;">
+                            <div style="flex: 1;" class="field-target-age">
+                                <label for="news-target-age" style="display: block; margin-bottom: 5px;">対象年齢・参加年齢</label>
+                                <input type="text" id="news-target-age" placeholder="例：小学4年生〜中学3年生" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            </div>
+                            <div style="flex: 1; display: none;" class="field-participants">
+                                <label for="news-participants" style="display: block; margin-bottom: 5px;">参加人数</label>
+                                <input type="text" id="news-participants" placeholder="例：30名程度" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            </div>
+                        </div>
+
+                        <div class="form-group field-divisions" style="margin-bottom: 20px; text-align: left; display: none;">
+                            <label style="display: block; margin-bottom: 10px; color: var(--primary);">部門</label>
+                            <div style="display: flex; gap: 30px; align-items: center; background: rgba(255,255,255,0.05); padding: 15px; border: 1px solid var(--glass-border); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; gap: 10px; color: white; margin: 0; cursor: pointer; font-size: 1.05rem;">
+                                    <input type="checkbox" name="news-division" value="競技部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 競技部門
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 10px; color: white; margin: 0; cursor: pointer; font-size: 1.05rem;">
+                                    <input type="checkbox" name="news-division" value="作品部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 作品部門
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group field-comments" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label style="display: block; margin-bottom: 5px;">参加者からのコメント <span style="font-size: 0.8rem; color: var(--text-dim);">※複数追加可能</span></label>
+                            <div id="comments-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
+                                <!-- Comments dynamically pushed here -->
+                            </div>
+                            <button type="button" id="add-comment-btn" class="btn-outline" style="padding: 8px 15px; font-size: 0.9rem;">＋ コメントを追加する</button>
+                        </div>
+
+                        <div class="form-group field-image" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label id="news-image-label" style="display: block; margin-bottom: 5px;">画像投稿 <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
+                            <input type="file" id="news-image-input" accept="image/*" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <div id="image-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                            <button type="button" id="news-preview-btn" class="btn-outline" style="margin-right: 10px;">プレビュー</button>
+                            <button type="button" id="news-cancel-btn" class="btn-outline" style="display: none; margin-right: 10px;">キャンセル</button>
+                            <button type="submit" class="btn-glow" id="news-submit-btn">投稿する</button>
+                        </div>
+                    </form>
+
+                    <h4 style="margin-top: 40px; margin-bottom: 15px;">投稿済みの記事 (<span id="news-list-category">お知らせ</span>)</h4>
+                    <div style="overflow-x: auto;">
+                        <table id="news-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">ID</th>
+                                    <th>タイトル</th>
+                                    <th style="width: 180px;">投稿日時</th>
+                                    <th style="width: 120px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="news-tbody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: var(--text-dim);">読み込み中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-fixed" class="admin-pane">
+                <div class="glass" style="margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>固定箇所（セクション）の編集</h3>
+                        <div>
+                            <select id="fixed-category-select" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000000; cursor: pointer; font-weight: 600;">
+                                <option value="ABOUT">ABOUT (U-16プロコンとは)</option>
+                                <option value="CLASS_COMP">部門紹介 (競技部門)</option>
+                                <option value="CLASS_WORK">部門紹介 (作品部門)</option>
+                                <option value="SNS">SNS</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <p style="color: var(--primary); font-weight: 600; margin-bottom: 20px; font-size: 1.1rem;">📝 <span id="current-fixed-category">ABOUT (U-16プロコンとは)</span> を編集します</p>
+                    <form id="fixed-form">
+                        <input type="hidden" id="fixed-id" name="fixed-id">
+                        <div class="form-group field-fixed-title" style="margin-bottom: 15px; text-align: left;">
+                            <label for="fixed-title" style="display: block; margin-bottom: 5px;">見出し / タイトル</label>
+                            <input type="text" id="fixed-title" placeholder="見出しを入力" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                        </div>
+                        <div class="form-group field-fixed-content" style="margin-bottom: 15px; text-align: left;">
+                            <label for="fixed-content" id="fixed-content-label" style="display: block; margin-bottom: 5px;">本文 / 詳細 (改行・HTMLが反映されます)</label>
+                            <textarea id="fixed-content" rows="10" placeholder="本文を入力" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;"></textarea>
+                        </div>
+                        
+                        <div class="form-group field-fixed-image" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label style="display: block; margin-bottom: 5px;">画像 (1枚) <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
+                            <input type="file" id="fixed-image-input" accept="image/*" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <div id="fixed-image-preview" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+                        </div>
+
+                        <div class="form-group field-fixed-link" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <label for="fixed-link" style="display: block; margin-bottom: 5px;">関連リンクURL</label>
+                            <input type="url" id="fixed-link" placeholder="https://example.com/..." style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                        </div>
+                        
+                        <div class="form-group field-fixed-sns" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 10px; padding: 15px;">
+                                <label style="display: block; margin-bottom: 10px; color: var(--secondary); font-weight: bold;">Instagram</label>
+                                <input type="text" id="sns-insta-id" placeholder="ユーザーID (例: @u16_procon)" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 5px;">
+                                <input type="url" id="sns-insta-link" placeholder="リンクURL" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 20px;">
+                                
+                                <label style="display: block; margin-bottom: 10px; color: var(--secondary); font-weight: bold;">X (旧Twitter)</label>
+                                <input type="text" id="sns-x-id" placeholder="ユーザーID (例: @u16_procon)" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 5px;">
+                                <input type="url" id="sns-x-link" placeholder="リンクURL" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 20px;">
+                                
+                                <label style="display: block; margin-bottom: 10px; color: var(--secondary); font-weight: bold;">YouTube</label>
+                                <input type="text" id="sns-youtube-id" placeholder="チャンネル名など" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 5px;">
+                                <input type="url" id="sns-youtube-link" placeholder="チャンネルURL" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            </div>
+                        </div>
+                        <div id="fixed-status" class="status-msg" style="margin-top: 15px;"></div>
+                        <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                            <button type="button" id="fixed-preview-btn" class="btn-outline" style="margin-right: 10px;">プレビュー</button>
+                            <button type="submit" class="btn-glow" id="fixed-submit-btn">この内容で更新する</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </main>
@@ -274,6 +541,19 @@
                 </form>
             </div>
         </div>
+        <!-- Preview Modal -->
+        <div class="modal" id="preview-modal">
+            <div class="modal-content" style="max-width: 800px;">
+                <h3 id="preview-modal-title">プレビュー</h3>
+                <div id="preview-container" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 30px; color: white; min-height: 200px; max-height: 60vh; overflow-y: auto;">
+                    <!-- Preview content will be injected here -->
+                </div>
+                <div class="form-actions" style="margin-top: 30px; text-align: right;">
+                    <button type="button" id="close-preview-btn" class="btn-glow">閉じる</button>
+                </div>
+            </div>
+        </div>
+
     </div> <!-- Close admin-main-content wrapper -->
 
     <script src="admin.js"></script>
