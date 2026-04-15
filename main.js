@@ -237,32 +237,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                     try { stakeholders = JSON.parse(stakeholders); } catch(e) { stakeholders = []; }
                 }
                 if (Array.isArray(stakeholders) && stakeholders.length > 0) {
-                    // Group by type
                     const groups = {};
                     stakeholders.forEach(s => {
                         if (!groups[s.type]) groups[s.type] = [];
                         groups[s.type].push(s);
                     });
 
-                    // Render in footer
                     const hostEl = document.getElementById('hp-stakeholder-host');
                     const coEl = document.getElementById('hp-stakeholder-co');
 
-                    if (hostEl && groups['\u4e3b\u50ac']) {
-                        hostEl.innerHTML = `<span style="color: rgba(255,255,255,0.5); font-size: 0.85rem; font-weight: 600;">\u4e3b\u50ac</span><br>` +
-                            groups['\u4e3b\u50ac'].map(s => s.url
-                                ? `<a href="${s.url}" target="_blank" rel="noopener" style="color: rgba(255,255,255,0.75); font-size: 0.9rem; text-decoration: none; display: inline-block; margin-top: 2px;">${s.name}</a>`
-                                : `<span style="color: rgba(255,255,255,0.75); font-size: 0.9rem;">${s.name}</span>`
+                    if (hostEl && groups['主催']) {
+                        hostEl.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 0.85rem; font-weight: 600;">主催</span><br>' +
+                            groups['主催'].map(s => s.url
+                                ? '<a href="' + s.url + '" target="_blank" rel="noopener" style="color: rgba(255,255,255,0.75); font-size: 0.9rem; text-decoration: none; display: inline-block; margin-top: 2px;">' + s.name + '</a>'
+                                : '<span style="color: rgba(255,255,255,0.75); font-size: 0.9rem;">' + s.name + '</span>'
                             ).join('<br>');
                     }
                     if (coEl) {
                         let coHtml = '';
-                        ['\u5171\u50ac', '\u5354\u8cdb'].forEach(type => {
+                        ['共催', '協賛', '後援'].forEach(type => {
                             if (groups[type]) {
-                                coHtml += `<span style="color: rgba(255,255,255,0.5); font-size: 0.85rem; font-weight: 600; display: block; margin-top: 8px;">${type}</span>`;
+                                coHtml += '<span style="color: rgba(255,255,255,0.5); font-size: 0.85rem; font-weight: 600; display: block; margin-top: 8px;">' + type + '</span>';
                                 coHtml += groups[type].map(s => s.url
-                                    ? `<a href="${s.url}" target="_blank" rel="noopener" style="color: rgba(255,255,255,0.75); font-size: 0.9rem; text-decoration: none; display: inline-block; margin-top: 2px;">${s.name}</a>`
-                                    : `<span style="color: rgba(255,255,255,0.75); font-size: 0.9rem;">${s.name}</span>`
+                                    ? '<a href="' + s.url + '" target="_blank" rel="noopener" style="color: rgba(255,255,255,0.75); font-size: 0.9rem; text-decoration: none; display: inline-block; margin-top: 2px;">' + s.name + '</a>'
+                                    : '<span style="color: rgba(255,255,255,0.75); font-size: 0.9rem;">' + s.name + '</span>'
                                 ).join('<br>');
                             }
                         });

@@ -837,7 +837,7 @@ async function fetchFixedData() {
     if (snsList) snsList.innerHTML = '';
     
     // Clear stakeholder lists
-    ['主催', '共催', '協賛'].forEach(type => {
+    ['主催', '共催', '協賛', '後援'].forEach(type => {
         const el = document.getElementById(`stakeholder-list-${type}`);
         if (el) el.innerHTML = '';
     });
@@ -958,7 +958,7 @@ function getSnsAccountsFromForm() {
 }
 
 function addStakeholderCard(type, data = {}) {
-    const list = document.getElementById(`stakeholder-list-${type}`);
+    const list = document.getElementById('stakeholder-list-' + type);
     if (!list) return;
 
     const idx = Date.now();
@@ -967,30 +967,60 @@ function addStakeholderCard(type, data = {}) {
     card.dataset.stakeholderType = type;
     card.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 15px; display: flex; gap: 10px; align-items: center; position: relative;';
 
-    card.innerHTML = `
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-            <div>
-                <label style="display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);">\u4F1A\u793E\u30FB\u56E3\u4F53\u540D <span style="color: #ff8080;">*\u5FC5\u9808</span></label>
-                <input type="text" class="stakeholder-field-name" value="${data.name || ''}" placeholder="\u4F8B\uFF1A\u9759\u5CA1\u770C" required
-                    style="width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem;">
-            </div>
-            <div>
-                <label style="display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);">URL <span style="font-size: 0.75rem;">(\u4EFB\u610F)</span></label>
-                <input type="url" class="stakeholder-field-url" value="${data.url || ''}" placeholder="https://example.com"
-                    style="width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem;">
-            </div>
-        </div>
-        <button type="button" onclick="this.closest('[data-stakeholder-card]').remove()"
-            style="align-self: flex-start; background: rgba(255,50,50,0.2); border: 1px solid rgba(255,80,80,0.4); color: #ff8080; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; white-space: nowrap;">\u524A\u9664</button>
-    `;
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'flex: 1; display: flex; flex-direction: column; gap: 8px;';
+
+    // Name field
+    const nameDiv = document.createElement('div');
+    const nameLabel = document.createElement('label');
+    nameLabel.style.cssText = 'display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);';
+    nameLabel.innerHTML = '会社・団体名 <span style="color: #ff8080;">*必須</span>';
+    nameDiv.appendChild(nameLabel);
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'stakeholder-field-name';
+    nameInput.value = data.name || '';
+    nameInput.placeholder = '例：静岡県';
+    nameInput.required = true;
+    nameInput.style.cssText = 'width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem;';
+    nameDiv.appendChild(nameInput);
+    wrapper.appendChild(nameDiv);
+
+    // URL field
+    const urlDiv = document.createElement('div');
+    const urlLabel = document.createElement('label');
+    urlLabel.style.cssText = 'display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);';
+    urlLabel.innerHTML = 'URL <span style="font-size: 0.75rem;">(任意)</span>';
+    urlDiv.appendChild(urlLabel);
+    const urlInput = document.createElement('input');
+    urlInput.type = 'url';
+    urlInput.className = 'stakeholder-field-url';
+    urlInput.value = data.url || '';
+    urlInput.placeholder = 'https://example.com';
+    urlInput.style.cssText = 'width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem;';
+    urlDiv.appendChild(urlInput);
+    wrapper.appendChild(urlDiv);
+
+    card.appendChild(wrapper);
+
+    // Delete button
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '削除';
+    delBtn.style.cssText = 'align-self: flex-start; background: rgba(255,50,50,0.2); border: 1px solid rgba(255,80,80,0.4); color: #ff8080; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; white-space: nowrap;';
+    delBtn.addEventListener('click', () => card.remove());
+    card.appendChild(delBtn);
+
     list.appendChild(card);
 }
 
 function getStakeholdersFromForm() {
-    const types = ['\u4E3B\u50AC', '\u5171\u50AC', '\u5354\u8CDB'];
+    const types = ['主催', '共催', '協賛', '後援'];
     const result = [];
     types.forEach(type => {
-        const cards = document.querySelectorAll(`#stakeholder-list-${type} [data-stakeholder-card]`);
+        const list = document.getElementById('stakeholder-list-' + type);
+        if (!list) return;
+        const cards = list.querySelectorAll('[data-stakeholder-card]');
         cards.forEach(card => {
             const name = card.querySelector('.stakeholder-field-name').value.trim();
             const url = card.querySelector('.stakeholder-field-url').value.trim();
