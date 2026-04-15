@@ -802,19 +802,21 @@ function updateFixedFormVisibility() {
     const isAbout = currentFixedCategory === 'ABOUT';
     const isSNS = currentFixedCategory === 'SNS';
     const isClass = currentFixedCategory === 'CLASS_COMP' || currentFixedCategory === 'CLASS_WORK';
+    const isStakeholders = currentFixedCategory === 'STAKEHOLDERS';
     
-    document.querySelector('.field-fixed-title').style.display = isSNS ? 'none' : 'block';
-    document.querySelector('.field-fixed-content').style.display = isSNS ? 'none' : 'block';
+    document.querySelector('.field-fixed-title').style.display = (isSNS || isStakeholders) ? 'none' : 'block';
+    document.querySelector('.field-fixed-content').style.display = (isSNS || isStakeholders) ? 'none' : 'block';
     
     document.querySelector('.field-fixed-image').style.display = isClass ? 'block' : 'none';
     document.querySelector('.field-fixed-link').style.display = isClass ? 'block' : 'none';
     
     document.querySelector('.field-fixed-sns').style.display = isSNS ? 'block' : 'none';
+    document.querySelector('.field-fixed-stakeholders').style.display = isStakeholders ? 'block' : 'none';
     
     if (isClass) {
         document.getElementById('fixed-content-label').textContent = "詳細 (改行・HTMLが反映されます)";
     } else {
-        document.getElementById('fixed-content-label').textContent = "本文 (改行・HTMLが反映されます)";
+        document.getElementById('fixed-content-label').textContent = "本文 / 詳細 (改行・HTMLが反映されます)";
     }
 }
 
@@ -833,6 +835,12 @@ async function fetchFixedData() {
     // Clear SNS accounts list
     const snsList = document.getElementById('sns-accounts-list');
     if (snsList) snsList.innerHTML = '';
+    
+    // Clear stakeholder lists
+    ['主催', '共催', '協賛'].forEach(type => {
+        const el = document.getElementById(`stakeholder-list-${type}`);
+        if (el) el.innerHTML = '';
+    });
     
     currentFixedImageBase64 = null;
     document.getElementById('fixed-image-preview').innerHTML = '';
@@ -864,6 +872,16 @@ async function fetchFixedData() {
                 // sns_data is now an array of { service, id, link, comment }
                 const accounts = Array.isArray(sns) ? sns : legacySnsToArray(sns);
                 accounts.forEach(acc => addSnsAccountCard(acc));
+            }
+            // Stakeholders: stored as JSON in content field
+            if (currentFixedCategory === 'STAKEHOLDERS' && data.content) {
+                let stakeholders = data.content;
+                if (typeof stakeholders === 'string') {
+                    try { stakeholders = JSON.parse(stakeholders); } catch(e) { stakeholders = []; }
+                }
+                if (Array.isArray(stakeholders)) {
+                    stakeholders.forEach(s => addStakeholderCard(s.type, s));
+                }
             }
         }
     } catch (error) {
@@ -939,14 +957,69 @@ function getSnsAccountsFromForm() {
     return result;
 }
 
+function addStakeholderCard(type, data = {}) {
+    const list = document.getElementById(`stakeholder-list-${type}`);
+    if (!list) return;
+
+    const idx = Date.now();
+    const card = document.createElement('div');
+    card.dataset.stakeholderCard = idx;
+    card.dataset.stakeholderType = type;
+    card.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 15px; display: flex; gap: 10px; align-items: center; position: relative;';
+
+    card.innerHTML = `
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+            <div>
+                <label style="display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);">\u4F1A\u793E\u30FB\u56E3\u4F53\u540D <span style="color: #ff8080;">*\u5FC5\u9808</span></label>
+                <input type="text" class="stakeholder-field-name" value="${data.name || ''}" placeholder="\u4F8B\uFF1A\u9759\u5CA1\u770C" required
+                    style="width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);">URL <span style="font-size: 0.75rem;">(\u4EFB\u610F)</span></label>
+                <input type="url" class="stakeholder-field-url" value="${data.url || ''}" placeholder="https://example.com"
+                    style="width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem;">
+            </div>
+        </div>
+        <button type="button" onclick="this.closest('[data-stakeholder-card]').remove()"
+            style="align-self: flex-start; background: rgba(255,50,50,0.2); border: 1px solid rgba(255,80,80,0.4); color: #ff8080; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; white-space: nowrap;">\u524A\u9664</button>
+    `;
+    list.appendChild(card);
+}
+
+function getStakeholdersFromForm() {
+    const types = ['\u4E3B\u50AC', '\u5171\u50AC', '\u5354\u8CDB'];
+    const result = [];
+    types.forEach(type => {
+        const cards = document.querySelectorAll(`#stakeholder-list-${type} [data-stakeholder-card]`);
+        cards.forEach(card => {
+            const name = card.querySelector('.stakeholder-field-name').value.trim();
+            const url = card.querySelector('.stakeholder-field-url').value.trim();
+            if (name) result.push({ type, name, url });
+        });
+    });
+    return result;
+}
+
 async function handleFixedSubmit(e) {
     e.preventDefault();
 
     const title = document.getElementById('fixed-title').value;
-    const content = document.getElementById('fixed-content').value;
     const link = document.getElementById('fixed-link').value;
     const category = currentFixedCategory;
     const statusMsg = document.getElementById('fixed-status');
+
+    // For STAKEHOLDERS, serialize as JSON into content field
+    let content;
+    if (category === 'STAKEHOLDERS') {
+        const stakeholders = getStakeholdersFromForm();
+        if (stakeholders.length === 0) {
+            alert('\u5C11\u306A\u304F\u3068\u30821\u4EF6\u306E\u56E3\u4F53\u30FB\u4F1A\u793E\u3092\u767B\u9332\u3057\u3066\u304F\u3060\u3055\u3044\u3002');
+            return;
+        }
+        content = JSON.stringify(stakeholders);
+    } else {
+        content = document.getElementById('fixed-content').value;
+    }
 
     const sns_data = getSnsAccountsFromForm();
 
@@ -961,20 +1034,33 @@ async function handleFixedSubmit(e) {
 
     try {
         const response = await fetch('/api/fixed', {
-            method: 'POST', // The backend upserts it
+            method: 'POST', // The backend upserts
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
         if (!response.ok) throw new Error('Failed to save fixed content');
         
-        statusMsg.textContent = '内容を更新しました。';
+        statusMsg.textContent = '\u5185\u5BB9\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F\u3002';
         statusMsg.className = 'status-msg success';
         statusMsg.style.display = 'block';
+
+        // Also persist to localStorage for local fallback
+        try {
+            let localFixed = JSON.parse(localStorage.getItem('mockFixedData') || '[]');
+            const idx = localFixed.findIndex(f => f.category === category);
+            const record = idx > -1 ? { ...localFixed[idx], ...payload } : { ...payload };
+            if (idx > -1) localFixed[idx] = record;
+            else localFixed.push(record);
+            localStorage.setItem('mockFixedData', JSON.stringify(localFixed));
+        } catch(e) { /* ignore localStorage errors */ }
         
         setTimeout(() => { statusMsg.style.display = 'none'; }, 3000);
         await fetchFixedData(); 
     } catch (error) {
         console.error(error);
+        statusMsg.textContent = '\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002';
+        statusMsg.className = 'status-msg error';
+        statusMsg.style.display = 'block';
     }
 }
