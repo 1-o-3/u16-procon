@@ -190,21 +190,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (item.category === 'SNS' && item.sns_data) {
                 const snsContainer = document.getElementById('hp-sns-container');
                 if (snsContainer) {
-                    let snsObj = item.sns_data;
-                    if (typeof snsObj === 'string') snsObj = JSON.parse(snsObj);
-                    
-                    let html = `<div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">`;
-                    if (snsObj.x && snsObj.x.link) {
-                        html += `<a href="${snsObj.x.link}" target="_blank" class="btn-outline" style="border-color: #1DA1F2; color: white;">𝕏 ${snsObj.x.id ? '(@' + snsObj.x.id + ')' : ''}</a>`;
+                    let snsData = item.sns_data;
+                    if (typeof snsData === 'string') snsData = JSON.parse(snsData);
+
+                    // Support both new array format and legacy object format
+                    let accounts = [];
+                    if (Array.isArray(snsData)) {
+                        accounts = snsData;
+                    } else {
+                        // Legacy format fallback
+                        if (snsData.x && (snsData.x.id || snsData.x.link)) {
+                            accounts.push({ service: 'X (旧Twitter)', id: snsData.x.id || '', link: snsData.x.link || '', comment: '' });
+                        }
+                        if (snsData.insta && (snsData.insta.id || snsData.insta.link)) {
+                            accounts.push({ service: 'Instagram', id: snsData.insta.id || '', link: snsData.insta.link || '', comment: '' });
+                        }
+                        if (snsData.youtube && (snsData.youtube.id || snsData.youtube.link)) {
+                            accounts.push({ service: 'YouTube', id: snsData.youtube.id || '', link: snsData.youtube.link || '', comment: '' });
+                        }
                     }
-                    if (snsObj.insta && snsObj.insta.link) {
-                        html += `<a href="${snsObj.insta.link}" target="_blank" class="btn-outline" style="border-color: #E1306C; color: white;">Instagram ${snsObj.insta.id ? '(@' + snsObj.insta.id + ')' : ''}</a>`;
+
+                    if (accounts.length > 0) {
+                        let html = `<div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">`;
+                        accounts.forEach(acc => {
+                            const displayId = acc.id ? acc.id : '';
+                            const label = `${acc.service}${displayId ? '　' + displayId : ''}`;
+                            const linkHtml = acc.link
+                                ? `<a href="${acc.link}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: none; font-weight: 700; font-size: 1.05rem;">${label}</a>`
+                                : `<span style="color: white; font-weight: 700; font-size: 1.05rem;">${label}</span>`;
+                            html += `
+                                <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px 25px; min-width: 200px; text-align: center; display: flex; flex-direction: column; gap: 8px; transition: background 0.2s;" 
+                                     onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
+                                     onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                                    <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">${acc.service}</div>
+                                    ${linkHtml}
+                                    ${acc.comment ? `<div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 4px;">${acc.comment}</div>` : ''}
+                                </div>`;
+                        });
+                        html += `</div>`;
+                        snsContainer.innerHTML = html;
                     }
-                    if (snsObj.youtube && snsObj.youtube.link) {
-                        html += `<a href="${snsObj.youtube.link}" target="_blank" class="btn-outline" style="border-color: #FF0000; color: white;">YouTube ${snsObj.youtube.id ? '(' + snsObj.youtube.id + ')' : ''}</a>`;
-                    }
-                    html += `</div>`;
-                    snsContainer.innerHTML = html;
                 }
             }
         });

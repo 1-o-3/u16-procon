@@ -480,19 +480,13 @@
                         </div>
                         
                         <div class="form-group field-fixed-sns" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 10px; padding: 15px;">
-                                <label style="display: block; margin-bottom: 10px; color: var(--secondary); font-weight: bold;">Instagram</label>
-                                <input type="text" id="sns-insta-id" placeholder="ユーザーID (例: @u16_procon)" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 5px;">
-                                <input type="url" id="sns-insta-link" placeholder="リンクURL" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 20px;">
-                                
-                                <label style="display: block; margin-bottom: 10px; color: var(--secondary); font-weight: bold;">X (旧Twitter)</label>
-                                <input type="text" id="sns-x-id" placeholder="ユーザーID (例: @u16_procon)" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 5px;">
-                                <input type="url" id="sns-x-link" placeholder="リンクURL" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 20px;">
-                                
-                                <label style="display: block; margin-bottom: 10px; color: var(--secondary); font-weight: bold;">YouTube</label>
-                                <input type="text" id="sns-youtube-id" placeholder="チャンネル名など" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; margin-bottom: 5px;">
-                                <input type="url" id="sns-youtube-link" placeholder="チャンネルURL" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 15px;">📌 SNSサービスを自由に追加できます。サービス名、ユーザーID（@含む）、リンクURL、コメントを入力してください。</p>
+                            <div id="sns-accounts-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
+                                <!-- SNS account cards will be injected here -->
                             </div>
+                            <button type="button" id="add-sns-account-btn" class="btn-outline" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+                                ＋ SNSアカウントを追加する
+                            </button>
                         </div>
                         <div id="fixed-status" class="status-msg" style="margin-top: 15px;"></div>
                         <div class="form-actions" style="margin-top: 20px; text-align: right;">

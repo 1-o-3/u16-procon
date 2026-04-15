@@ -789,6 +789,11 @@ function initFixedLogic() {
     }
 
     document.getElementById('fixed-form').addEventListener('submit', handleFixedSubmit);
+
+    const addSnsBtn = document.getElementById('add-sns-account-btn');
+    if (addSnsBtn) {
+        addSnsBtn.addEventListener('click', () => addSnsAccountCard());
+    }
 }
 
 let currentFixedImageBase64 = null;
@@ -824,12 +829,10 @@ async function fetchFixedData() {
     document.getElementById('fixed-title').value = '';
     document.getElementById('fixed-content').value = '';
     document.getElementById('fixed-link').value = '';
-    document.getElementById('sns-insta-id').value = '';
-    document.getElementById('sns-insta-link').value = '';
-    document.getElementById('sns-x-id').value = '';
-    document.getElementById('sns-x-link').value = '';
-    document.getElementById('sns-youtube-id').value = '';
-    document.getElementById('sns-youtube-link').value = '';
+    
+    // Clear SNS accounts list
+    const snsList = document.getElementById('sns-accounts-list');
+    if (snsList) snsList.innerHTML = '';
     
     currentFixedImageBase64 = null;
     document.getElementById('fixed-image-preview').innerHTML = '';
@@ -858,23 +861,82 @@ async function fetchFixedData() {
             if (data.sns_data) {
                 let sns = data.sns_data;
                 if (typeof sns === 'string') sns = JSON.parse(sns);
-                if (sns.insta) {
-                    document.getElementById('sns-insta-id').value = sns.insta.id || '';
-                    document.getElementById('sns-insta-link').value = sns.insta.link || '';
-                }
-                if (sns.x) {
-                    document.getElementById('sns-x-id').value = sns.x.id || '';
-                    document.getElementById('sns-x-link').value = sns.x.link || '';
-                }
-                if (sns.youtube) {
-                    document.getElementById('sns-youtube-id').value = sns.youtube.id || '';
-                    document.getElementById('sns-youtube-link').value = sns.youtube.link || '';
-                }
+                // sns_data is now an array of { service, id, link, comment }
+                const accounts = Array.isArray(sns) ? sns : legacySnsToArray(sns);
+                accounts.forEach(acc => addSnsAccountCard(acc));
             }
         }
     } catch (error) {
         console.error(error);
     }
+}
+
+// Convert old {insta:{}, x:{}, youtube:{}} format to new array format
+function legacySnsToArray(sns) {
+    const result = [];
+    if (sns.insta && (sns.insta.id || sns.insta.link)) {
+        result.push({ service: 'Instagram', id: sns.insta.id || '', link: sns.insta.link || '', comment: '' });
+    }
+    if (sns.x && (sns.x.id || sns.x.link)) {
+        result.push({ service: 'X (旧Twitter)', id: sns.x.id || '', link: sns.x.link || '', comment: '' });
+    }
+    if (sns.youtube && (sns.youtube.id || sns.youtube.link)) {
+        result.push({ service: 'YouTube', id: sns.youtube.id || '', link: sns.youtube.link || '', comment: '' });
+    }
+    return result;
+}
+
+function addSnsAccountCard(data = {}) {
+    const list = document.getElementById('sns-accounts-list');
+    if (!list) return;
+
+    const idx = list.children.length;
+    const card = document.createElement('div');
+    card.dataset.snsCard = idx;
+    card.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 15px; position: relative;';
+
+    card.innerHTML = `
+        <button type="button" onclick="this.closest('[data-sns-card]').remove()" 
+            style="position: absolute; top: 10px; right: 10px; background: rgba(255,50,50,0.2); border: 1px solid rgba(255,80,80,0.4); color: #ff8080; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.8rem;">削除</button>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">サービス名 (例: Instagram, X, YouTube など)</label>
+                <input type="text" class="sns-field-service" value="${data.service || ''}" placeholder="Instagram" 
+                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">ユーザーID (@を含めて入力)</label>
+                <input type="text" class="sns-field-id" value="${data.id || ''}" placeholder="@u16_procon" 
+                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">リンクURL</label>
+                <input type="url" class="sns-field-url" value="${data.link || ''}" placeholder="https://x.com/u16_procon" 
+                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">コメント (HP上での補足説明)</label>
+                <input type="text" class="sns-field-comment" value="${data.comment || ''}" placeholder="最新情報を発信中！" 
+                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+            </div>
+        </div>
+    `;
+    list.appendChild(card);
+}
+
+function getSnsAccountsFromForm() {
+    const cards = document.querySelectorAll('#sns-accounts-list [data-sns-card]');
+    const result = [];
+    cards.forEach(card => {
+        const service = card.querySelector('.sns-field-service').value.trim();
+        const id = card.querySelector('.sns-field-id').value.trim();
+        const link = card.querySelector('.sns-field-url').value.trim();
+        const comment = card.querySelector('.sns-field-comment').value.trim();
+        if (service || id || link) {
+            result.push({ service, id, link, comment });
+        }
+    });
+    return result;
 }
 
 async function handleFixedSubmit(e) {
@@ -886,20 +948,7 @@ async function handleFixedSubmit(e) {
     const category = currentFixedCategory;
     const statusMsg = document.getElementById('fixed-status');
 
-    const sns_data = {
-        insta: {
-            id: document.getElementById('sns-insta-id').value,
-            link: document.getElementById('sns-insta-link').value
-        },
-        x: {
-            id: document.getElementById('sns-x-id').value,
-            link: document.getElementById('sns-x-link').value
-        },
-        youtube: {
-            id: document.getElementById('sns-youtube-id').value,
-            link: document.getElementById('sns-youtube-link').value
-        }
-    };
+    const sns_data = getSnsAccountsFromForm();
 
     const payload = { 
         category, 
