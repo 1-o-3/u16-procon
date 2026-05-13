@@ -28,20 +28,29 @@
         }
 
         .tab-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
+            background: white;
+            border: 1.5px solid var(--primary-light);
             color: var(--text-main);
             padding: 10px 25px;
             border-radius: 50px;
             cursor: pointer;
             white-space: nowrap;
             transition: all 0.3s ease;
+            font-weight: 500;
         }
 
         .tab-btn.active {
-            background: var(--gradient);
-            border-color: transparent;
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
             font-weight: 700;
+            box-shadow: 0 4px 12px rgba(26, 123, 196, 0.30);
+        }
+
+        .tab-btn:not(.active):hover {
+            background: var(--primary-pale);
+            border-color: var(--primary);
+            color: var(--primary);
         }
 
         /* QA List */
@@ -69,13 +78,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-weight: 600;
-            color: var(--secondary);
+            font-weight: 700;
+            color: var(--primary);
             transition: background 0.3s ease;
         }
 
         .qa-question:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--primary-pale);
         }
 
         .qa-question::after {
@@ -96,7 +105,8 @@
             transition: max-height 0.4s ease, padding 0.4s ease;
             padding: 0 20px;
             color: var(--text-main);
-            background: rgba(0, 0, 0, 0.2);
+            background: var(--primary-pale);
+            line-height: 1.8;
         }
 
         .qa-item.open .qa-answer {
@@ -117,7 +127,7 @@
 </head>
 
 <body>
-    <header id="main-header" style="background: rgba(10, 11, 30, 0.95); padding: 15px 0;">
+    <header id="main-header" style="background: rgba(240, 246, 255, 0.95); padding: 15px 0;">
         <div class="container">
             <div class="logo">
                 <a href="../index.html" style="text-decoration: none; display: flex; align-items: center; gap:15px;">

@@ -3,10 +3,12 @@ window.addEventListener('scroll', () => {
     const header = document.querySelector('header');
     if (window.scrollY > 50) {
         header.style.padding = '15px 0';
-        header.style.background = 'rgba(10, 11, 30, 0.95)';
+        header.style.background = 'rgba(240, 246, 255, 0.97)';
+        header.style.boxShadow = '0 2px 20px rgba(26, 123, 196, 0.12)';
     } else {
         header.style.padding = '20px 0';
-        header.style.background = 'rgba(10, 11, 30, 0.7)';
+        header.style.background = 'rgba(240, 246, 255, 0.88)';
+        header.style.boxShadow = '0 2px 16px rgba(26, 123, 196, 0.08)';
     }
 });
 
@@ -95,12 +97,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span style="color: var(--text-dim); font-size: 0.9rem;">${dateStr}</span>
                     </div>
                 </div>
-                <h3 style="font-size: 1.2rem; color: white;">${item.title}</h3>
+                <h3 style="font-size: 1.2rem; color: var(--text-main); font-weight: 700;">${item.title}</h3>
                 <p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap;">${item.content}</p>
             `;
             
             if (hasSubinfo) {
-                html += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 5px; font-size: 0.9rem;">`;
+                html += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--primary-light); display: flex; flex-direction: column; gap: 5px; font-size: 0.9rem;">`;
                 if (item.start_date) {
                     html += `<div><strong style="color: var(--secondary);">開催日:</strong> ${new Date(item.start_date).toLocaleDateString('ja-JP')} ${item.start_time || ''} ${item.end_time ? '〜 ' + item.end_time : ''} ${item.is_tentative ? '(予定)' : ''}</div>`;
                 }
