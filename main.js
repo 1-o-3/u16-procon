@@ -276,3 +276,323 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Failed to load fixed content", e);
     }
 });
+
+// ==============================
+// Fetch "今期の開催情報" Section
+// ==============================
+document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('home-current-container');
+    if (!container) return;
+
+    try {
+        let data = [];
+        try {
+            const response = await fetch('/api/news?category=' + encodeURIComponent('今期の開催情報'));
+            if (response.ok) {
+                data = await response.json();
+            } else {
+                throw new Error('API fetch failed');
+            }
+        } catch (e) {
+            console.log("Using local mock data for current events");
+            const local = localStorage.getItem('mockNewsData');
+            if (local) {
+                const allNews = JSON.parse(local);
+                data = allNews.filter(n => n.category === '今期の開催情報' && !n.is_past);
+            }
+        }
+
+        if (data.length === 0) {
+            container.innerHTML = `
+                <div class="glass" style="text-align: center; padding: 40px;">
+                    <h3 style="color: var(--text-main); margin-bottom: 10px;">2026年度 大会概要</h3>
+                    <p style="color: var(--text-dim);">現在開催準備を進めております。詳細が決まり次第お知らせします。</p>
+                    <div style="margin-top: 20px;">
+                        <a href="https://forms.gle/9AU6rz7fzH7mLzQM7" target="_blank" class="btn-glow">参加申し込みフォームはこちら</a>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = '';
+        data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'glass reveal-on-scroll';
+            div.style.padding = '25px';
+
+            let html = '';
+
+            // Title
+            html += `<h3 style="font-size: 1.3rem; color: var(--text-main); font-weight: 700; margin-bottom: 12px;">${item.title}</h3>`;
+
+            // Event details grid
+            let detailsHtml = '';
+            if (item.start_date) {
+                const dateStr = new Date(item.start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+                const timeStr = item.start_time ? ` ${item.start_time}` : '';
+                const endStr = item.end_time ? ` 〜 ${item.end_time}` : '';
+                const tentStr = item.is_tentative ? ' <span style="background: var(--secondary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px;">予定</span>' : '';
+                detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">📅 日時</span><span style="color: var(--text-main);">${dateStr}${timeStr}${endStr}${tentStr}</span></div>`;
+            }
+            if (item.location) {
+                const locHtml = item.map_url
+                    ? `<a href="${item.map_url}" target="_blank" style="color: var(--primary); text-decoration: underline;">${item.location}</a>`
+                    : item.location;
+                detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">📍 会場</span><span style="color: var(--text-main);">${locHtml}</span></div>`;
+            }
+            if (item.target_age) {
+                detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">👤 対象</span><span style="color: var(--text-main);">${item.target_age}</span></div>`;
+            }
+            if (item.divisions && item.divisions.length > 0) {
+                const divList = typeof item.divisions === 'string' ? JSON.parse(item.divisions) : item.divisions;
+                detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">🏆 部門</span><span style="color: var(--text-main);">${divList.join('・')}</span></div>`;
+            }
+
+            if (detailsHtml) {
+                html += `<div style="display: flex; flex-direction: column; gap: 8px; padding: 15px; background: var(--primary-pale); border-radius: 10px; margin-bottom: 15px;">${detailsHtml}</div>`;
+            }
+
+            // Content
+            if (item.content) {
+                html += `<p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap; line-height: 1.7;">${item.content}</p>`;
+            }
+
+            // Images
+            if (item.images && item.images.length > 0) {
+                const imgs = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
+                html += `<div style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px;">
+                    ${imgs.map(src => `<img src="${src}" style="height: 150px; border-radius: 10px; object-fit: cover;">`).join('')}
+                </div>`;
+            }
+
+            // Action buttons
+            let btnsHtml = '';
+            if (item.application_url) {
+                btnsHtml += `<a href="${item.application_url}" target="_blank" class="btn-glow" style="padding: 10px 20px; font-size: 0.9rem;">申し込みはこちら</a>`;
+            }
+            if (item.overview_url) {
+                btnsHtml += `<a href="${item.overview_url}" target="_blank" class="btn-outline" style="padding: 10px 20px; font-size: 0.9rem;">詳細を見る</a>`;
+            }
+            if (btnsHtml) {
+                html += `<div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">${btnsHtml}</div>`;
+            }
+
+            div.innerHTML = html;
+            container.appendChild(div);
+            observer.observe(div);
+        });
+
+    } catch (e) {
+        container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">開催情報の読み込みに失敗しました。</p>';
+    }
+});
+
+// ==============================
+// Fetch "過去の開催情報" Section
+// ==============================
+document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('home-past-container');
+    if (!container) return;
+
+    try {
+        let data = [];
+        try {
+            const response = await fetch('/api/news?category=' + encodeURIComponent('過去の開催情報'));
+            if (response.ok) {
+                data = await response.json();
+            } else {
+                throw new Error('API fetch failed');
+            }
+        } catch (e) {
+            console.log("Using local mock data for past events");
+            const local = localStorage.getItem('mockNewsData');
+            if (local) {
+                const allNews = JSON.parse(local);
+                data = allNews.filter(n => n.category === '過去の開催情報' || (n.category === '今期の開催情報' && n.is_past));
+            }
+        }
+
+        if (data.length === 0) {
+            container.innerHTML = `
+                <div class="glass" style="text-align: center; padding: 40px;">
+                    <p style="color: var(--text-dim);">過去の大会データは現在整理中です。</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = '';
+        data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'glass reveal-on-scroll';
+            div.style.padding = '25px';
+
+            let html = '';
+
+            // Title and date
+            html += `<h3 style="font-size: 1.2rem; color: var(--text-main); font-weight: 700; margin-bottom: 8px;">${item.title}</h3>`;
+            if (item.start_date) {
+                const dateStr = new Date(item.start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+                html += `<p style="color: var(--primary); font-size: 0.9rem; margin-bottom: 12px;">📅 ${dateStr}</p>`;
+            }
+
+            // Content
+            if (item.content) {
+                html += `<p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap; line-height: 1.7;">${item.content}</p>`;
+            }
+
+            // Event info
+            let infoHtml = '';
+            if (item.location) {
+                infoHtml += `<span style="color: var(--text-dim); font-size: 0.85rem;">📍 ${item.location}</span>`;
+            }
+            if (item.participants) {
+                infoHtml += `<span style="color: var(--text-dim); font-size: 0.85rem;">👥 参加者: ${item.participants}名</span>`;
+            }
+            if (infoHtml) {
+                html += `<div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">${infoHtml}</div>`;
+            }
+
+            // Past images (gallery)
+            const pastImgs = item.past_images ? (typeof item.past_images === 'string' ? JSON.parse(item.past_images) : item.past_images) : [];
+            const mainImgs = item.images ? (typeof item.images === 'string' ? JSON.parse(item.images) : item.images) : [];
+            const allImgs = [...pastImgs, ...mainImgs];
+            if (allImgs.length > 0) {
+                html += `<div style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px;">
+                    ${allImgs.map(src => `<img src="${src}" style="height: 140px; border-radius: 10px; object-fit: cover;">`).join('')}
+                </div>`;
+            }
+
+            // Participant comments
+            if (item.participant_comments) {
+                const comments = typeof item.participant_comments === 'string' ? JSON.parse(item.participant_comments) : item.participant_comments;
+                if (comments && comments.length > 0) {
+                    html += `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--primary-light);">
+                        <p style="color: var(--primary); font-size: 0.85rem; font-weight: 700; margin-bottom: 8px;">💬 参加者の声</p>
+                        ${comments.map(c => `<div style="background: var(--primary-pale); border-radius: 8px; padding: 10px 15px; margin-bottom: 6px; color: var(--text-dim); font-size: 0.9rem; font-style: italic;">「${c}」</div>`).join('')}
+                    </div>`;
+                }
+            }
+
+            div.innerHTML = html;
+            container.appendChild(div);
+            observer.observe(div);
+        });
+
+    } catch (e) {
+        container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">過去の開催情報の読み込みに失敗しました。</p>';
+    }
+});
+
+// ==============================
+// Fetch "他所での開催" Section
+// ==============================
+document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('home-other-container');
+    if (!container) return;
+
+    try {
+        let data = [];
+        try {
+            const response = await fetch('/api/news?category=' + encodeURIComponent('他所での開催'));
+            if (response.ok) {
+                data = await response.json();
+            } else {
+                throw new Error('API fetch failed');
+            }
+        } catch (e) {
+            console.log("Using local mock data for other events");
+            const local = localStorage.getItem('mockNewsData');
+            if (local) {
+                const allNews = JSON.parse(local);
+                data = allNews.filter(n => n.category === '他所での開催');
+            }
+        }
+
+        if (data.length === 0) {
+            container.innerHTML = `
+                <div class="glass" style="text-align: center; padding: 40px;">
+                    <p style="color: var(--text-dim);">U-16プログラミングコンテストは全国各地で開催されています。<br>各地域の情報は随時更新されます。</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = '';
+
+        // Intro text
+        const intro = document.createElement('p');
+        intro.style.cssText = 'color: var(--text-dim); text-align: center; margin-bottom: 10px; font-size: 0.95rem;';
+        intro.textContent = 'U-16プログラミングコンテストは全国各地で開催されています。各地域の熱い戦いにもご注目ください。';
+        container.appendChild(intro);
+
+        // Grid layout for regional events
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;';
+
+        data.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'glass reveal-on-scroll';
+            card.style.cssText = 'padding: 20px; display: flex; flex-direction: column; gap: 10px; transition: transform 0.2s;';
+            card.onmouseover = () => card.style.transform = 'translateY(-3px)';
+            card.onmouseout = () => card.style.transform = 'translateY(0)';
+
+            let html = '';
+
+            // Prefecture badge + Title
+            if (item.prefecture) {
+                html += `<span style="background: var(--secondary); color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; width: fit-content;">${item.prefecture}</span>`;
+            }
+            html += `<h3 style="font-size: 1.1rem; color: var(--text-main); font-weight: 700;">${item.title}</h3>`;
+
+            // Date
+            if (item.start_date) {
+                const dateStr = new Date(item.start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+                const timeStr = item.start_time ? ` ${item.start_time}` : '';
+                const endStr = item.end_time ? ` 〜 ${item.end_time}` : '';
+                html += `<p style="color: var(--primary); font-size: 0.85rem;">📅 ${dateStr}${timeStr}${endStr}</p>`;
+            }
+
+            // Content
+            if (item.content) {
+                const shortContent = item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content;
+                html += `<p style="color: var(--text-dim); font-size: 0.9rem; line-height: 1.6;">${shortContent}</p>`;
+            }
+
+            // Participants & divisions
+            let metaHtml = '';
+            if (item.participants) {
+                metaHtml += `<span style="font-size: 0.8rem; color: var(--text-dim);">👥 ${item.participants}名</span>`;
+            }
+            if (item.divisions) {
+                const divList = typeof item.divisions === 'string' ? JSON.parse(item.divisions) : item.divisions;
+                if (divList && divList.length > 0) {
+                    metaHtml += `<span style="font-size: 0.8rem; color: var(--text-dim);">🏆 ${divList.join('・')}</span>`;
+                }
+            }
+            if (metaHtml) {
+                html += `<div style="display: flex; gap: 12px; flex-wrap: wrap;">${metaHtml}</div>`;
+            }
+
+            // Images (show first image as thumbnail)
+            if (item.images && item.images.length > 0) {
+                const imgs = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
+                if (imgs.length > 0) {
+                    html += `<img src="${imgs[0]}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-top: 5px;">`;
+                }
+            }
+
+            // Link
+            if (item.overview_url) {
+                html += `<a href="${item.overview_url}" target="_blank" class="btn-outline" style="padding: 8px 15px; font-size: 0.85rem; text-align: center; margin-top: auto;">詳細を見る</a>`;
+            }
+
+            card.innerHTML = html;
+            grid.appendChild(card);
+            observer.observe(card);
+        });
+
+        container.appendChild(grid);
+
+    } catch (e) {
+        container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">他所での開催情報の読み込みに失敗しました。</p>';
+    }
+});
