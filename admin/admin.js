@@ -97,6 +97,85 @@ let currentNewsCategory = 'お知らせ';
 let currentFixedCategory = 'ABOUT';
 let currentImagesBase64 = [];
 
+let subdivisionNames = ["ビギナー", "チャレンジ", "エキスパート"];
+
+function extractSubdivisionsFromNews(newsList) {
+    const found = new Set();
+    newsList.forEach(item => {
+        let divs = item.divisions;
+        if (divs) {
+            if (typeof divs === 'string') {
+                try { divs = JSON.parse(divs); } catch (e) { divs = []; }
+            }
+            if (Array.isArray(divs)) {
+                divs.forEach(d => {
+                    const match = d.match(/^競技部門 \((.+)\)$/);
+                    if (match) {
+                        found.add(match[1]);
+                    }
+                });
+            }
+        }
+    });
+    return Array.from(found);
+}
+
+async function loadAllSubdivisions() {
+    const defaults = ["ビギナー", "チャレンジ", "エキスパート"];
+    const custom = JSON.parse(localStorage.getItem('u16_custom_subdivisions') || '[]');
+    
+    let dbSubs = [];
+    try {
+        const res = await fetch('/api/news');
+        if (res.ok) {
+            const allNews = await res.json();
+            dbSubs = extractSubdivisionsFromNews(allNews);
+        }
+    } catch (e) {
+        console.error("Failed to load subdivisions from DB:", e);
+        const localNews = JSON.parse(localStorage.getItem('mockNewsData') || '[]');
+        dbSubs = extractSubdivisionsFromNews(localNews);
+    }
+    
+    const merged = new Set([...defaults, ...custom, ...dbSubs]);
+    subdivisionNames = Array.from(merged);
+}
+
+function renderSubdivisions(checkedDivisions = []) {
+    const container = document.getElementById('subdivisions-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    subdivisionNames.forEach(name => {
+        const value = `競技部門 (${name})`;
+        const isChecked = checkedDivisions.includes(value);
+        
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 8px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 0.95rem;';
+        
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.name = 'news-division';
+        input.value = value;
+        input.checked = isChecked;
+        input.style.cssText = 'width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--primary);';
+        
+        input.addEventListener('change', () => {
+            const parentCheckbox = document.getElementById('news-division-comp');
+            if (input.checked && parentCheckbox) {
+                parentCheckbox.checked = true;
+                syncCompSubdivisions();
+            }
+        });
+        
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(` ${name}部門`));
+        
+        container.appendChild(label);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Other logic is assumed to be handled already...
     document.getElementById('news-preview-btn').addEventListener('click', showNewsPreview);
@@ -166,6 +245,7 @@ function initNewsLogic() {
             document.getElementById('news-id').value = '';
             document.getElementById('news-submit-btn').textContent = cat === '過去の開催情報' ? '過去の大会としてアーカイブする' : '投稿する';
             document.getElementById('news-cancel-btn').style.display = 'none';
+            renderSubdivisions([]);
             syncCompSubdivisions();
             fetchNewsData();
         });
@@ -246,55 +326,80 @@ function initNewsLogic() {
         document.getElementById('news-submit-btn').textContent = '投稿する';
         document.getElementById('news-cancel-btn').style.display = 'none';
         updateNewsFormVisibility(currentNewsCategory);
+        renderSubdivisions([]);
         syncCompSubdivisions();
     });
 
     // Subdivisions Toggle & Check Synchronization
     const parentCheckbox = document.getElementById('news-division-comp');
-    const beginnerCb = document.getElementById('news-division-comp-beginner');
-    const challengeCb = document.getElementById('news-division-comp-challenge');
-    const expertCb = document.getElementById('news-division-comp-expert');
-
     if (parentCheckbox) {
         parentCheckbox.addEventListener('change', syncCompSubdivisions);
     }
-    [beginnerCb, challengeCb, expertCb].forEach(cb => {
-        if (cb) {
-            cb.addEventListener('change', () => {
-                if (cb.checked && parentCheckbox) {
-                    parentCheckbox.checked = true;
-                    syncCompSubdivisions();
-                }
-            });
-        }
+
+    const addSubdivisionBtn = document.getElementById('add-subdivision-btn');
+    if (addSubdivisionBtn) {
+        addSubdivisionBtn.addEventListener('click', async () => {
+            const name = prompt('追加する部門の名前を入力してください (例: アドバンス):');
+            if (!name) return;
+            const trimmed = name.trim();
+            if (!trimmed) return;
+            
+            if (subdivisionNames.includes(trimmed)) {
+                alert('その部門名は既に存在します。');
+                return;
+            }
+            
+            const custom = JSON.parse(localStorage.getItem('u16_custom_subdivisions') || '[]');
+            if (!custom.includes(trimmed)) {
+                custom.push(trimmed);
+                localStorage.setItem('u16_custom_subdivisions', JSON.stringify(custom));
+            }
+            
+            await loadAllSubdivisions();
+            
+            const checked = Array.from(document.querySelectorAll('input[name="news-division"]:checked')).map(cb => cb.value);
+            const newValue = `競技部門 (${trimmed})`;
+            if (!checked.includes(newValue)) {
+                checked.push(newValue);
+            }
+            
+            renderSubdivisions(checked);
+            
+            const parentCb = document.getElementById('news-division-comp');
+            if (parentCb) {
+                parentCb.checked = true;
+            }
+            syncCompSubdivisions();
+        });
+    }
+
+    loadAllSubdivisions().then(() => {
+        renderSubdivisions([]);
+        syncCompSubdivisions();
     });
-    syncCompSubdivisions();
 }
 
 function syncCompSubdivisions() {
     const parentCheckbox = document.getElementById('news-division-comp');
-    const beginnerCb = document.getElementById('news-division-comp-beginner');
-    const challengeCb = document.getElementById('news-division-comp-challenge');
-    const expertCb = document.getElementById('news-division-comp-expert');
     const container = document.getElementById('subdivisions-container');
 
-    if (!parentCheckbox || !beginnerCb || !challengeCb || !expertCb || !container) return;
+    if (!parentCheckbox || !container) return;
+
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
 
     if (parentCheckbox.checked) {
         container.style.opacity = '1';
         container.style.pointerEvents = 'auto';
-        beginnerCb.disabled = false;
-        challengeCb.disabled = false;
-        expertCb.disabled = false;
+        checkboxes.forEach(cb => {
+            cb.disabled = false;
+        });
     } else {
         container.style.opacity = '0.5';
         container.style.pointerEvents = 'none';
-        beginnerCb.checked = false;
-        challengeCb.checked = false;
-        expertCb.checked = false;
-        beginnerCb.disabled = true;
-        challengeCb.disabled = true;
-        expertCb.disabled = true;
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+            cb.disabled = true;
+        });
     }
 }
 
@@ -303,9 +408,11 @@ function showAdminPanel() {
     const main = document.getElementById('admin-main-content');
     if (overlay) overlay.style.display = 'none';
     if (main) main.style.display = 'block';
-    fetchQAData();
-    fetchNewsData(); 
-    fetchFixedData(); // Also load fixed content
+    loadAllSubdivisions().then(() => {
+        fetchQAData();
+        fetchNewsData(); 
+        fetchFixedData(); // Also load fixed content
+    });
 }
 
 let qaData = [];
@@ -653,9 +760,18 @@ function openEditNews(id) {
     document.getElementById('news-target-age').value = item.target_age || '';
     document.getElementById('news-participants').value = item.participants || '';
     
+    renderSubdivisions(item.divisions || []);
     document.querySelectorAll('input[name="news-division"]').forEach(cb => {
-        if (item.divisions && item.divisions.includes(cb.value)) cb.checked = true;
-        else cb.checked = false;
+        if (item.divisions) {
+            if (cb.value === '競技部門') {
+                const hasComp = item.divisions.includes('競技部門') || item.divisions.some(d => d.startsWith('競技部門 ('));
+                cb.checked = hasComp;
+            } else {
+                cb.checked = item.divisions.includes(cb.value);
+            }
+        } else {
+            cb.checked = false;
+        }
     });
     syncCompSubdivisions();
 
@@ -779,6 +895,7 @@ async function handleNewsSubmit(e) {
         document.getElementById('news-cancel-btn').style.display = 'none';
         
         updateNewsFormVisibility(currentNewsCategory); // reset view logic
+        renderSubdivisions([]);
         syncCompSubdivisions();
 
         await fetchNewsData(); // Refresh list
@@ -801,6 +918,7 @@ async function handleNewsSubmit(e) {
         document.getElementById('news-id').value = '';
         document.getElementById('news-submit-btn').textContent = '投稿する';
         document.getElementById('news-cancel-btn').style.display = 'none';
+        renderSubdivisions([]);
         syncCompSubdivisions();
         
         await fetchNewsData();
