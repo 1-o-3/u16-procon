@@ -49,6 +49,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Database setup logic
+    const setupDbBtn = document.getElementById('setup-db-btn');
+    if (setupDbBtn) {
+        setupDbBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!confirm('データベースのテーブル初期化およびアップデートを実行しますか？（既存のデータは削除されません）')) {
+                return;
+            }
+            
+            setupDbBtn.textContent = '初期化中...';
+            setupDbBtn.style.pointerEvents = 'none';
+            setupDbBtn.style.opacity = '0.5';
+            
+            try {
+                const res = await fetch('/api/setup');
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert('データベース初期化に成功しました！\n' + data.message);
+                    window.location.reload();
+                } else {
+                    alert('初期化に失敗しました:\n' + (data.error || data.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('通信エラーが発生しました: ' + err.message);
+            } finally {
+                setupDbBtn.textContent = 'データベース初期化';
+                setupDbBtn.style.pointerEvents = 'auto';
+                setupDbBtn.style.opacity = '1';
+            }
+        });
+    }
+
     document.getElementById('add-new-btn').addEventListener('click', openAddModal);
     document.getElementById('cancel-btn').addEventListener('click', closeModal);
     document.getElementById('qa-form').addEventListener('submit', handleFormSubmit);
