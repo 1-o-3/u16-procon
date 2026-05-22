@@ -1,5 +1,29 @@
 import { sql } from '@vercel/postgres';
 
+async function ensureTableExists() {
+    await sql`
+        CREATE TABLE IF NOT EXISTS fixed_content_table (
+            id SERIAL PRIMARY KEY,
+            category VARCHAR(255) UNIQUE NOT NULL,
+            title VARCHAR(255),
+            content TEXT,
+            image TEXT,
+            link TEXT,
+            sns_data JSONB,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+    try {
+        await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS image TEXT;`;
+        await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS link TEXT;`;
+        await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS sns_data JSONB;`;
+        await sql`ALTER TABLE fixed_content_table ALTER COLUMN content DROP NOT NULL;`;
+    } catch(e) {
+        console.error("Alter columns failed on fixed_content_table", e);
+    }
+}
+
 export default async function handler(request, response) {
     // Enable CORS for API
     response.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,6 +35,9 @@ export default async function handler(request, response) {
     }
 
     try {
+        // Ensure table exists
+        await ensureTableExists();
+
         if (request.method === 'GET') {
             const { category } = request.query;
             let result;

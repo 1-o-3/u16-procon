@@ -1,5 +1,38 @@
 import { sql } from '@vercel/postgres';
 
+async function ensureTableExists() {
+    await sql`
+        CREATE TABLE IF NOT EXISTS news_table (
+            id SERIAL PRIMARY KEY,
+            category VARCHAR(255) NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            content TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+    try {
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS start_date DATE;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS end_date DATE;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS start_time VARCHAR(10);`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS end_time VARCHAR(10);`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS location VARCHAR(255);`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS map_url TEXT;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS application_url TEXT;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS overview_url TEXT;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS target_age VARCHAR(255);`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS divisions JSONB;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS images JSONB;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS prefecture VARCHAR(255);`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS participants VARCHAR(255);`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS is_tentative BOOLEAN DEFAULT FALSE;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS is_past BOOLEAN DEFAULT FALSE;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS past_images JSONB;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS participant_comments JSONB;`;
+    } catch(e) {
+        console.error("Alter columns failed on news_table", e);
+    }
+}
+
 export default async function handler(request, response) {
     // Enable CORS for API
     response.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,6 +44,8 @@ export default async function handler(request, response) {
     }
 
     try {
+        // Ensure table exists
+        await ensureTableExists();
         if (request.method === 'GET') {
             const { category } = request.query;
             let result;

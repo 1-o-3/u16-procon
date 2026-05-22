@@ -1,5 +1,18 @@
 import { sql } from '@vercel/postgres';
 
+async function ensureTableExists() {
+    await sql`
+        CREATE TABLE IF NOT EXISTS qa_table (
+            id SERIAL PRIMARY KEY,
+            category VARCHAR(255) NOT NULL,
+            category_id INTEGER NOT NULL,
+            question TEXT NOT NULL,
+            answer TEXT NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+}
+
 export default async function handler(request, response) {
     // Enable CORS for API
     response.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,6 +24,8 @@ export default async function handler(request, response) {
     }
 
     try {
+        // Ensure table exists
+        await ensureTableExists();
         if (request.method === 'GET') {
             const { rows } = await sql`SELECT * FROM qa_table ORDER BY category_id, id;`;
             return response.status(200).json(rows);

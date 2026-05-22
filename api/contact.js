@@ -1,5 +1,19 @@
 import { sql } from '@vercel/postgres';
 
+async function ensureTableExists() {
+    await sql`
+        CREATE TABLE IF NOT EXISTS inquiries_table (
+            id SERIAL PRIMARY KEY,
+            genre VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            subject VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+}
+
 export default async function handler(request, response) {
     // Enable CORS
     response.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,6 +32,8 @@ export default async function handler(request, response) {
         }
 
         try {
+            // Ensure table exists
+            await ensureTableExists();
             const { rows } = await sql`
                 INSERT INTO inquiries_table (genre, name, email, subject, message)
                 VALUES (${genre}, ${name}, ${email}, ${subject}, ${message})
