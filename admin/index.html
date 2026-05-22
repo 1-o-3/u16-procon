@@ -333,37 +333,37 @@
                         <input type="hidden" id="news-id" name="news-id">
                         <div class="form-group field-migration" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label for="news-migration-select" style="display: block; margin-bottom: 5px;">アーカイブする大会を選択</label>
-                            <select id="news-migration-select" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <select id="news-migration-select">
                                 <option value="">大会を選択してください...</option>
                             </select>
-                            <div id="migration-preview-box" style="display: none; padding: 15px; background: rgba(255,255,255,0.02); border: 1px dashed var(--glass-border); border-radius: 8px; margin-top: 15px; font-size: 0.95rem; line-height: 1.5; color: var(--text-dim);"> 
+                            <div id="migration-preview-box" style="display: none; padding: 15px; background: var(--primary-pale); border: 1px dashed var(--primary-light); border-radius: 8px; margin-top: 15px; font-size: 0.95rem; line-height: 1.5; color: var(--text-main);"> 
                                 <!-- Read-only preview injected here -->
                             </div>
                         </div>
 
                         <div class="form-group field-common" style="margin-bottom: 15px; text-align: left;">
                             <label for="news-title" style="display: block; margin-bottom: 5px;">タイトル</label>
-                            <input type="text" id="news-title" placeholder="記事のタイトルを入力" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;" required>
+                            <input type="text" id="news-title" placeholder="記事のタイトルを入力" required>
                         </div>
                         
                         <div class="form-group field-prefecture" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label for="news-prefecture" style="display: block; margin-bottom: 5px;">開催都道府県</label>
-                            <input type="text" id="news-prefecture" placeholder="例：静岡県" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <input type="text" id="news-prefecture" placeholder="例：静岡県">
                         </div>
 
                         <div class="form-group field-dates" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label style="display: block; margin-bottom: 5px;">開催日 <span id="news-auto-migrate-text" style="font-size: 0.8rem; color: var(--text-dim);">（当日の日付を過ぎると自動で過去の記事へ移動します）</span></label>
-                            <div style="display: flex; gap: 10px; align-items: center; color: white; margin-bottom: 10px;">
-                                <input type="date" id="news-start-date" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000;">
+                            <div style="display: flex; gap: 10px; align-items: center; color: var(--text-main); margin-bottom: 10px;">
+                                <input type="date" id="news-start-date" style="padding: 10px; background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem;">
                             </div>
                             <div class="field-time-tentative">
                                 <label style="display: block; margin-bottom: 5px; margin-top: 10px;">時間</label>
-                                <div style="display: flex; gap: 10px; align-items: center; color: white; margin-bottom: 15px;">
-                                    <input type="time" id="news-start-time" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000;">
+                                <div style="display: flex; gap: 10px; align-items: center; color: var(--text-main); margin-bottom: 15px;">
+                                    <input type="time" id="news-start-time" style="padding: 10px; background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem;">
                                     ～ 
-                                    <input type="time" id="news-end-time" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000;">
+                                    <input type="time" id="news-end-time" style="padding: 10px; background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem;">
                                 </div>
-                                <label style="display: flex; align-items: center; gap: 8px; color: white; margin: 0; cursor: pointer; font-size: 0.95rem;">
+                                <label style="display: flex; align-items: center; gap: 8px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 0.95rem;">
                                     <input type="checkbox" id="news-is-tentative" value="true" style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 予定（日時や場所が未確定・予定の段階の場合にチェック）
                                 </label>
                             </div>
@@ -371,48 +371,64 @@
 
                         <div class="form-group field-location" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label for="news-location" style="display: block; margin-bottom: 5px;">開催地・施設名</label>
-                            <input type="text" id="news-location" placeholder="例：静岡大学 浜松キャンパス" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <input type="text" id="news-location" placeholder="例：静岡大学 浜松キャンパス">
                         </div>
 
                         <div class="form-group field-map-url" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label for="news-map-url" style="display: block; margin-bottom: 5px;">URL (Google Mapのハイパーリンク)</label>
-                            <input type="url" id="news-map-url" placeholder="https://goo.gl/maps/..." style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <input type="url" id="news-map-url" placeholder="https://goo.gl/maps/...">
                         </div>
 
                         <div class="form-group field-application" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label for="news-application-url" style="display: block; margin-bottom: 5px;">大会申し込みURL (※過去記事には表示されません)</label>
-                            <input type="url" id="news-application-url" placeholder="https://forms.gle/..." style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <input type="url" id="news-application-url" placeholder="https://forms.gle/...">
                         </div>
 
                         <div class="form-group field-overview-url" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label for="news-overview-url" style="display: block; margin-bottom: 5px;">大会概要のURL</label>
-                            <input type="url" id="news-overview-url" placeholder="https://example.com/overview" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <input type="url" id="news-overview-url" placeholder="https://example.com/overview">
                         </div>
 
                         <div class="form-group field-content" style="margin-bottom: 15px; text-align: left;">
                             <label id="news-content-label" for="news-content" style="display: block; margin-bottom: 5px;">本文 / 概要</label>
-                            <textarea id="news-content" rows="6" placeholder="記事の本文や概要を入力" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;" required></textarea>
+                            <textarea id="news-content" rows="6" placeholder="記事の本文や概要を入力" required></textarea>
                         </div>
                         
                         <div class="form-group field-participants-group" style="display: none; gap: 15px; margin-bottom: 15px; text-align: left;">
                             <div style="flex: 1;" class="field-target-age">
                                 <label for="news-target-age" style="display: block; margin-bottom: 5px;">対象年齢・参加年齢</label>
-                                <input type="text" id="news-target-age" placeholder="例：小学4年生〜中学3年生" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                                <input type="text" id="news-target-age" placeholder="例：小学4年生〜中学3年生">
                             </div>
                             <div style="flex: 1; display: none;" class="field-participants">
                                 <label for="news-participants" style="display: block; margin-bottom: 5px;">参加人数</label>
-                                <input type="text" id="news-participants" placeholder="例：30名程度" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                                <input type="text" id="news-participants" placeholder="例：30名程度">
                             </div>
                         </div>
 
                         <div class="form-group field-divisions" style="margin-bottom: 20px; text-align: left; display: none;">
                             <label style="display: block; margin-bottom: 10px; color: var(--primary);">部門</label>
-                            <div style="display: flex; gap: 30px; align-items: center; background: rgba(255,255,255,0.05); padding: 15px; border: 1px solid var(--glass-border); border-radius: 8px;">
-                                <label style="display: flex; align-items: center; gap: 10px; color: white; margin: 0; cursor: pointer; font-size: 1.05rem;">
-                                    <input type="checkbox" name="news-division" value="競技部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 競技部門
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 10px; color: white; margin: 0; cursor: pointer; font-size: 1.05rem;">
-                                    <input type="checkbox" name="news-division" value="作品部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 作品部門
+                            <div style="display: flex; flex-direction: column; gap: 15px; background: white; padding: 20px; border: 2px solid var(--primary-light); border-radius: 12px; box-shadow: 0 2px 8px rgba(26, 123, 196, 0.07);">
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <label style="display: flex; align-items: center; gap: 10px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 1.05rem; font-weight: 700;">
+                                        <input type="checkbox" id="news-division-comp" name="news-division" value="競技部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 競技部門
+                                    </label>
+                                    <div id="subdivisions-container" style="display: flex; gap: 20px; align-items: center; margin-left: 32px; padding-top: 5px; transition: all 0.3s ease;">
+                                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 0.95rem;">
+                                            <input type="checkbox" id="news-division-comp-beginner" name="news-division" value="競技部門 (ビギナー)" style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--primary);"> ビギナー部門
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 0.95rem;">
+                                            <input type="checkbox" id="news-division-comp-challenge" name="news-division" value="競技部門 (チャレンジ)" style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--primary);"> チャレンジ部門
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 0.95rem;">
+                                            <input type="checkbox" id="news-division-comp-expert" name="news-division" value="競技部門 (エキスパート)" style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--primary);"> エキスパート部門
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <hr style="border: 0; border-top: 1px solid var(--primary-light); margin: 5px 0;">
+                                
+                                <label style="display: flex; align-items: center; gap: 10px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 1.05rem; font-weight: 700;">
+                                    <input type="checkbox" id="news-division-work" name="news-division" value="作品部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 作品部門
                                 </label>
                             </div>
                         </div>
@@ -427,7 +443,7 @@
 
                         <div class="form-group field-image" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label id="news-image-label" style="display: block; margin-bottom: 5px;">画像投稿 <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
-                            <input type="file" id="news-image-input" accept="image/*" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <input type="file" id="news-image-input" accept="image/*">
                             <div id="image-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
                         </div>
 
@@ -479,22 +495,22 @@
                         <input type="hidden" id="fixed-id" name="fixed-id">
                         <div class="form-group field-fixed-title" style="margin-bottom: 15px; text-align: left;">
                             <label for="fixed-title" style="display: block; margin-bottom: 5px;">見出し / タイトル</label>
-                            <input type="text" id="fixed-title" placeholder="見出しを入力" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <input type="text" id="fixed-title" placeholder="見出しを入力">
                         </div>
                         <div class="form-group field-fixed-content" style="margin-bottom: 15px; text-align: left;">
                             <label for="fixed-content" id="fixed-content-label" style="display: block; margin-bottom: 5px;">本文 / 詳細 (改行・HTMLが反映されます)</label>
-                            <textarea id="fixed-content" rows="10" placeholder="本文を入力" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;"></textarea>
+                            <textarea id="fixed-content" rows="10" placeholder="本文を入力"></textarea>
                         </div>
                         
                         <div class="form-group field-fixed-image" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label style="display: block; margin-bottom: 5px;">画像 (1枚) <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
-                            <input type="file" id="fixed-image-input" accept="image/*" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <input type="file" id="fixed-image-input" accept="image/*">
                             <div id="fixed-image-preview" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
                         </div>
 
                         <div class="form-group field-fixed-link" style="margin-bottom: 15px; text-align: left; display: none;">
                             <label for="fixed-link" style="display: block; margin-bottom: 5px;">関連リンクURL</label>
-                            <input type="url" id="fixed-link" placeholder="https://example.com/..." style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                            <input type="url" id="fixed-link" placeholder="https://example.com/...">
                         </div>
                         
                         <div class="form-group field-fixed-stakeholders" style="margin-bottom: 15px; text-align: left; display: none;">
@@ -563,8 +579,7 @@
                     <input type="hidden" id="entry-id" name="id">
                     <div class="form-group">
                         <label for="category">ジャンル</label>
-                        <select id="category" name="category" required
-                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                        <select id="category" name="category" required>
                             <option value="">ジャンルを選択してください</option>
                             <option value="参加資格について">参加資格について</option>
                             <option value="部門全体について">部門全体について</option>
@@ -596,7 +611,7 @@
         <div class="modal" id="preview-modal">
             <div class="modal-content" style="max-width: 800px;">
                 <h3 id="preview-modal-title">プレビュー</h3>
-                <div id="preview-container" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 30px; color: white; min-height: 200px; max-height: 60vh; overflow-y: auto;">
+                <div id="preview-container" style="background: var(--primary-pale); border: 2px solid var(--primary-light); border-radius: 12px; padding: 30px; color: var(--text-main); min-height: 200px; max-height: 60vh; overflow-y: auto;">
                     <!-- Preview content will be injected here -->
                 </div>
                 <div class="form-actions" style="margin-top: 30px; text-align: right;">

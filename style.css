@@ -475,8 +475,13 @@ footer {
 }
 
 .form-group select option {
-    background: white;
-    color: var(--text-main);
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+select, select option, option {
+    background-color: #ffffff !important;
+    color: #000000 !important;
 }
 
 .form-actions {

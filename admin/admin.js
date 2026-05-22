@@ -166,6 +166,7 @@ function initNewsLogic() {
             document.getElementById('news-id').value = '';
             document.getElementById('news-submit-btn').textContent = cat === '過去の開催情報' ? '過去の大会としてアーカイブする' : '投稿する';
             document.getElementById('news-cancel-btn').style.display = 'none';
+            syncCompSubdivisions();
             fetchNewsData();
         });
     }
@@ -187,7 +188,7 @@ function initNewsLogic() {
                 const d = item.start_date ? String(item.start_date).split('T')[0] : '未設定';
                 const t = item.start_time || '';
                 previewBox.innerHTML = `
-                    <strong style="color: white; font-size: 1.1rem; display: block; margin-bottom: 5px;">${item.title}</strong>
+                    <strong style="color: var(--primary); font-size: 1.1rem; display: block; margin-bottom: 5px;">${item.title}</strong>
                     <span style="font-size: 0.9rem; display: block; margin-bottom: 10px;">📅 ${d} ${t}</span>
                     <div style="white-space: pre-wrap;">${item.content}</div>
                 `;
@@ -203,10 +204,10 @@ function initNewsLogic() {
         input.placeholder = '参加者のコメント等...';
         input.style.width = '100%';
         input.style.padding = '12px';
-        input.style.background = 'rgba(255,255,255,0.05)';
-        input.style.border = '1px solid var(--glass-border)';
+        input.style.background = '#ffffff';
+        input.style.border = '1px solid var(--primary-light)';
         input.style.borderRadius = '8px';
-        input.style.color = 'white';
+        input.style.color = 'var(--text-main)';
         input.style.marginBottom = '5px';
         container.appendChild(input);
     });
@@ -245,7 +246,56 @@ function initNewsLogic() {
         document.getElementById('news-submit-btn').textContent = '投稿する';
         document.getElementById('news-cancel-btn').style.display = 'none';
         updateNewsFormVisibility(currentNewsCategory);
+        syncCompSubdivisions();
     });
+
+    // Subdivisions Toggle & Check Synchronization
+    const parentCheckbox = document.getElementById('news-division-comp');
+    const beginnerCb = document.getElementById('news-division-comp-beginner');
+    const challengeCb = document.getElementById('news-division-comp-challenge');
+    const expertCb = document.getElementById('news-division-comp-expert');
+
+    if (parentCheckbox) {
+        parentCheckbox.addEventListener('change', syncCompSubdivisions);
+    }
+    [beginnerCb, challengeCb, expertCb].forEach(cb => {
+        if (cb) {
+            cb.addEventListener('change', () => {
+                if (cb.checked && parentCheckbox) {
+                    parentCheckbox.checked = true;
+                    syncCompSubdivisions();
+                }
+            });
+        }
+    });
+    syncCompSubdivisions();
+}
+
+function syncCompSubdivisions() {
+    const parentCheckbox = document.getElementById('news-division-comp');
+    const beginnerCb = document.getElementById('news-division-comp-beginner');
+    const challengeCb = document.getElementById('news-division-comp-challenge');
+    const expertCb = document.getElementById('news-division-comp-expert');
+    const container = document.getElementById('subdivisions-container');
+
+    if (!parentCheckbox || !beginnerCb || !challengeCb || !expertCb || !container) return;
+
+    if (parentCheckbox.checked) {
+        container.style.opacity = '1';
+        container.style.pointerEvents = 'auto';
+        beginnerCb.disabled = false;
+        challengeCb.disabled = false;
+        expertCb.disabled = false;
+    } else {
+        container.style.opacity = '0.5';
+        container.style.pointerEvents = 'none';
+        beginnerCb.checked = false;
+        challengeCb.checked = false;
+        expertCb.checked = false;
+        beginnerCb.disabled = true;
+        challengeCb.disabled = true;
+        expertCb.disabled = true;
+    }
 }
 
 function showAdminPanel() {
@@ -607,6 +657,7 @@ function openEditNews(id) {
         if (item.divisions && item.divisions.includes(cb.value)) cb.checked = true;
         else cb.checked = false;
     });
+    syncCompSubdivisions();
 
     currentImagesBase64 = item.images || [];
     const previewContainer = document.getElementById('image-preview-container');
@@ -630,10 +681,10 @@ function openEditNews(id) {
                 input.value = c;
                 input.style.width = '100%';
                 input.style.padding = '12px';
-                input.style.background = 'rgba(255,255,255,0.05)';
-                input.style.border = '1px solid var(--glass-border)';
+                input.style.background = '#ffffff';
+                input.style.border = '1px solid var(--primary-light)';
                 input.style.borderRadius = '8px';
-                input.style.color = 'white';
+                input.style.color = 'var(--text-main)';
                 input.style.marginBottom = '5px';
                 commentsContainer.appendChild(input);
             });
@@ -728,6 +779,7 @@ async function handleNewsSubmit(e) {
         document.getElementById('news-cancel-btn').style.display = 'none';
         
         updateNewsFormVisibility(currentNewsCategory); // reset view logic
+        syncCompSubdivisions();
 
         await fetchNewsData(); // Refresh list
     } catch (error) {
@@ -749,6 +801,7 @@ async function handleNewsSubmit(e) {
         document.getElementById('news-id').value = '';
         document.getElementById('news-submit-btn').textContent = '投稿する';
         document.getElementById('news-cancel-btn').style.display = 'none';
+        syncCompSubdivisions();
         
         await fetchNewsData();
     }
@@ -944,31 +997,31 @@ function addSnsAccountCard(data = {}) {
     const idx = list.children.length;
     const card = document.createElement('div');
     card.dataset.snsCard = idx;
-    card.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 15px; position: relative;';
+    card.style.cssText = 'background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; padding: 20px; position: relative; box-shadow: 0 2px 8px rgba(26,123,196,0.06);';
 
     card.innerHTML = `
         <button type="button" onclick="this.closest('[data-sns-card]').remove()" 
-            style="position: absolute; top: 10px; right: 10px; background: rgba(255,50,50,0.2); border: 1px solid rgba(255,80,80,0.4); color: #ff8080; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.8rem;">削除</button>
+            style="position: absolute; top: 15px; right: 15px; background: rgba(214, 48, 49, 0.1); border: 1px solid rgba(214, 48, 49, 0.2); color: #d63031; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">削除</button>
         <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
             <div>
                 <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">サービス名 (例: Instagram, X, YouTube など)</label>
                 <input type="text" class="sns-field-service" value="${data.service || ''}" placeholder="Instagram" 
-                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
             </div>
             <div>
                 <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">ユーザーID (@を含めて入力)</label>
                 <input type="text" class="sns-field-id" value="${data.id || ''}" placeholder="@u16_procon" 
-                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
             </div>
             <div>
                 <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">リンクURL</label>
                 <input type="url" class="sns-field-url" value="${data.link || ''}" placeholder="https://x.com/u16_procon" 
-                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
             </div>
             <div>
                 <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">コメント (HP上での補足説明)</label>
                 <input type="text" class="sns-field-comment" value="${data.comment || ''}" placeholder="最新情報を発信中！" 
-                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white;">
+                    style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
             </div>
         </div>
     `;
@@ -998,7 +1051,7 @@ function addStakeholderCard(type, data = {}) {
     const card = document.createElement('div');
     card.dataset.stakeholderCard = idx;
     card.dataset.stakeholderType = type;
-    card.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 15px; display: flex; gap: 10px; align-items: center; position: relative;';
+    card.style.cssText = 'background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; padding: 15px; display: flex; gap: 10px; align-items: center; position: relative; box-shadow: 0 2px 8px rgba(26,123,196,0.06);';
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'flex: 1; display: flex; flex-direction: column; gap: 8px;';
@@ -1015,7 +1068,7 @@ function addStakeholderCard(type, data = {}) {
     nameInput.value = data.name || '';
     nameInput.placeholder = '例：静岡県';
     nameInput.required = true;
-    nameInput.style.cssText = 'width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem;';
+    nameInput.style.cssText = 'width: 100%; padding: 9px 12px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-size: 0.95rem; font-family: inherit;';
     nameDiv.appendChild(nameInput);
     wrapper.appendChild(nameDiv);
 
@@ -1030,7 +1083,7 @@ function addStakeholderCard(type, data = {}) {
     urlInput.className = 'stakeholder-field-url';
     urlInput.value = data.url || '';
     urlInput.placeholder = 'https://example.com';
-    urlInput.style.cssText = 'width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem;';
+    urlInput.style.cssText = 'width: 100%; padding: 9px 12px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-size: 0.95rem; font-family: inherit;';
     urlDiv.appendChild(urlInput);
     wrapper.appendChild(urlDiv);
 
@@ -1040,7 +1093,7 @@ function addStakeholderCard(type, data = {}) {
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.textContent = '削除';
-    delBtn.style.cssText = 'align-self: flex-start; background: rgba(255,50,50,0.2); border: 1px solid rgba(255,80,80,0.4); color: #ff8080; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; white-space: nowrap;';
+    delBtn.style.cssText = 'align-self: center; background: rgba(214, 48, 49, 0.1); border: 1px solid rgba(214, 48, 49, 0.2); color: #d63031; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600; white-space: nowrap;';
     delBtn.addEventListener('click', () => card.remove());
     card.appendChild(delBtn);
 

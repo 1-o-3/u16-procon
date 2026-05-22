@@ -344,7 +344,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">👤 対象</span><span style="color: var(--text-main);">${item.target_age}</span></div>`;
             }
             if (item.divisions && item.divisions.length > 0) {
-                const divList = typeof item.divisions === 'string' ? JSON.parse(item.divisions) : item.divisions;
+                let divList = typeof item.divisions === 'string' ? JSON.parse(item.divisions) : item.divisions;
+                if (divList && divList.length > 0) {
+                    const hasSubdivision = divList.some(d => d.includes('競技部門 ('));
+                    if (hasSubdivision) {
+                        divList = divList.filter(d => d !== '競技部門');
+                    }
+                }
                 detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">🏆 部門</span><span style="color: var(--text-main);">${divList.join('・')}</span></div>`;
             }
 
@@ -563,8 +569,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 metaHtml += `<span style="font-size: 0.8rem; color: var(--text-dim);">👥 ${item.participants}名</span>`;
             }
             if (item.divisions) {
-                const divList = typeof item.divisions === 'string' ? JSON.parse(item.divisions) : item.divisions;
+                let divList = typeof item.divisions === 'string' ? JSON.parse(item.divisions) : item.divisions;
                 if (divList && divList.length > 0) {
+                    const hasSubdivision = divList.some(d => d.includes('競技部門 ('));
+                    if (hasSubdivision) {
+                        divList = divList.filter(d => d !== '競技部門');
+                    }
                     metaHtml += `<span style="font-size: 0.8rem; color: var(--text-dim);">🏆 ${divList.join('・')}</span>`;
                 }
             }
