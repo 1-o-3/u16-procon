@@ -28,13 +28,17 @@ export default async function handler(request, response) {
             const { category, title, content, image, link, sns_data } = request.body;
             if (!category) throw new Error('Missing required fields');
 
+            // Ensure content is never null to handle potential NOT NULL constraint
+            const safeContent = content || '';
+            const safeTitle = title || '';
+
             const existing = await sql`SELECT * FROM fixed_content_table WHERE category = ${category};`;
 
             if (existing.rowCount > 0) {
                 const { rows } = await sql`
                     UPDATE fixed_content_table 
-                    SET title = ${title}, 
-                        content = ${content || null}, 
+                    SET title = ${safeTitle}, 
+                        content = ${safeContent}, 
                         image = ${image || null}, 
                         link = ${link || null}, 
                         sns_data = ${sns_data ? JSON.stringify(sns_data) : null}, 
@@ -46,7 +50,7 @@ export default async function handler(request, response) {
             } else {
                 const { rows } = await sql`
                     INSERT INTO fixed_content_table (category, title, content, image, link, sns_data)
-                    VALUES (${category}, ${title}, ${content || null}, ${image || null}, ${link || null}, ${sns_data ? JSON.stringify(sns_data) : null})
+                    VALUES (${category}, ${safeTitle}, ${safeContent}, ${image || null}, ${link || null}, ${sns_data ? JSON.stringify(sns_data) : null})
                     RETURNING *;
                 `;
                 return response.status(201).json(rows[0]);

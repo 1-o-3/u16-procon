@@ -1069,7 +1069,10 @@ async function handleFixedSubmit(e) {
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) throw new Error('Failed to save fixed content');
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || 'Failed to save fixed content');
+        }
         
         statusMsg.textContent = '\u5185\u5BB9\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F\u3002';
         statusMsg.className = 'status-msg success';
@@ -1089,7 +1092,12 @@ async function handleFixedSubmit(e) {
         await fetchFixedData(); 
     } catch (error) {
         console.error(error);
-        statusMsg.textContent = '\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002';
+        // Show detailed error from server if available
+        let errorDetail = '保存に失敗しました。';
+        if (error.message && error.message !== 'Failed to save fixed content') {
+            errorDetail += ' (' + error.message + ')';
+        }
+        statusMsg.textContent = errorDetail;
         statusMsg.className = 'status-msg error';
         statusMsg.style.display = 'block';
     }
