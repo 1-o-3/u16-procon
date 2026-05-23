@@ -97,7 +97,7 @@ let currentNewsCategory = 'お知らせ';
 let currentFixedCategory = 'ABOUT';
 let currentImagesBase64 = [];
 
-let subdivisionNames = ["ビギナー", "チャレンジ", "エキスパート"];
+let subdivisionNames = ["U-16", "O-16"];
 
 function extractSubdivisionsFromNews(newsList) {
     const found = new Set();
@@ -121,7 +121,7 @@ function extractSubdivisionsFromNews(newsList) {
 }
 
 async function loadAllSubdivisions() {
-    const defaults = ["ビギナー", "チャレンジ", "エキスパート"];
+    const defaults = ["U-16", "O-16"];
     const custom = JSON.parse(localStorage.getItem('u16_custom_subdivisions') || '[]');
     
     let dbSubs = [];
@@ -141,7 +141,7 @@ async function loadAllSubdivisions() {
     subdivisionNames = Array.from(merged);
 }
 
-function renderSubdivisions(checkedDivisions = []) {
+function renderSubdivisions(checkedDivisions = ["競技部門 (U-16)"]) {
     const container = document.getElementById('subdivisions-container');
     if (!container) return;
     
@@ -174,6 +174,13 @@ function renderSubdivisions(checkedDivisions = []) {
         
         container.appendChild(label);
     });
+
+    // Sync parent checkbox state
+    const parentCheckbox = document.getElementById('news-division-comp');
+    if (parentCheckbox) {
+        const hasComp = checkedDivisions.includes('競技部門') || checkedDivisions.some(d => d.startsWith('競技部門 ('));
+        parentCheckbox.checked = hasComp;
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -245,7 +252,7 @@ function initNewsLogic() {
             document.getElementById('news-id').value = '';
             document.getElementById('news-submit-btn').textContent = cat === '過去の開催情報' ? '過去の大会としてアーカイブする' : '投稿する';
             document.getElementById('news-cancel-btn').style.display = 'none';
-            renderSubdivisions([]);
+            renderSubdivisions(["競技部門 (U-16)"]);
             syncCompSubdivisions();
             fetchNewsData();
         });
@@ -326,7 +333,7 @@ function initNewsLogic() {
         document.getElementById('news-submit-btn').textContent = '投稿する';
         document.getElementById('news-cancel-btn').style.display = 'none';
         updateNewsFormVisibility(currentNewsCategory);
-        renderSubdivisions([]);
+        renderSubdivisions(["競技部門 (U-16)"]);
         syncCompSubdivisions();
     });
 
@@ -374,7 +381,7 @@ function initNewsLogic() {
     }
 
     loadAllSubdivisions().then(() => {
-        renderSubdivisions([]);
+        renderSubdivisions(["競技部門 (U-16)"]);
         syncCompSubdivisions();
     });
 }
@@ -408,6 +415,29 @@ function showAdminPanel() {
     const main = document.getElementById('admin-main-content');
     if (overlay) overlay.style.display = 'none';
     if (main) main.style.display = 'block';
+
+    // Initialize local fixed data if not present
+    if (!localStorage.getItem('mockFixedData')) {
+        const defaultFixed = [
+            {
+                category: 'ABOUT',
+                title: 'U-16プロコンとは',
+                content: '「U-16プログラミングコンテスト 静岡大会」は、静岡県内の小・中・高校生を対象とした、次世代のITリーダーを発揮するためのステージです。\n\nプログラミングを通じて課題を解決したり、新しいエンターテインメントを生み出したりする創造力を募集しています。これまでの成果を披露し、多くの仲間と切磋琢磨しましょう。'
+            },
+            {
+                category: 'CLASS_COMP',
+                title: '部門紹介 (競技部門)',
+                content: '対戦型プログラムを作成し、アルゴリズムや戦略を競い合う部門です。\n\n・U-16部門（15歳以下対象）：初心者から参加可能な対戦型プログラミングです。（初期状態で選択されます）\n・O-16部門（16歳以上対象）：より高度なアルゴリズムや多言語で競い合います。\n\n他者のコードと対戦させることで、より高度なロジックへの理解を深めます。'
+            },
+            {
+                category: 'CLASS_WORK',
+                title: '部門紹介 (作品部門)',
+                content: '自由なアイデアでWebサイト、アプリ、ゲームなどを制作する部門です。技術的な完成度だけでなく、独創性や社会への有用性が評価されます。'
+            }
+        ];
+        localStorage.setItem('mockFixedData', JSON.stringify(defaultFixed));
+    }
+
     loadAllSubdivisions().then(() => {
         fetchQAData();
         fetchNewsData(); 
@@ -895,7 +925,7 @@ async function handleNewsSubmit(e) {
         document.getElementById('news-cancel-btn').style.display = 'none';
         
         updateNewsFormVisibility(currentNewsCategory); // reset view logic
-        renderSubdivisions([]);
+        renderSubdivisions(["競技部門 (U-16)"]);
         syncCompSubdivisions();
 
         await fetchNewsData(); // Refresh list
@@ -918,7 +948,7 @@ async function handleNewsSubmit(e) {
         document.getElementById('news-id').value = '';
         document.getElementById('news-submit-btn').textContent = '投稿する';
         document.getElementById('news-cancel-btn').style.display = 'none';
-        renderSubdivisions([]);
+        renderSubdivisions(["競技部門 (U-16)"]);
         syncCompSubdivisions();
         
         await fetchNewsData();
@@ -1090,6 +1120,45 @@ async function fetchFixedData() {
         }
     } catch (error) {
         console.error(error);
+
+        // --- Fallback for local demo ONLY ---
+        try {
+            const localFixed = JSON.parse(localStorage.getItem('mockFixedData') || '[]');
+            const data = localFixed.find(f => f.category === currentFixedCategory);
+            if (data) {
+                document.getElementById('fixed-id').value = data.id || '';
+                document.getElementById('fixed-title').value = data.title || '';
+                document.getElementById('fixed-content').value = data.content || '';
+                document.getElementById('fixed-link').value = data.link || '';
+                
+                if (data.image) {
+                    currentFixedImageBase64 = data.image;
+                    const img = document.createElement('img');
+                    img.src = data.image;
+                    img.style.height = '100px';
+                    img.style.borderRadius = '5px';
+                    document.getElementById('fixed-image-preview').appendChild(img);
+                }
+                
+                if (data.sns_data) {
+                    let sns = data.sns_data;
+                    if (typeof sns === 'string') sns = JSON.parse(sns);
+                    const accounts = Array.isArray(sns) ? sns : legacySnsToArray(sns);
+                    accounts.forEach(acc => addSnsAccountCard(acc));
+                }
+                if (currentFixedCategory === 'STAKEHOLDERS' && data.content) {
+                    let stakeholders = data.content;
+                    if (typeof stakeholders === 'string') {
+                        try { stakeholders = JSON.parse(stakeholders); } catch(e) { stakeholders = []; }
+                    }
+                    if (Array.isArray(stakeholders)) {
+                        stakeholders.forEach(s => addStakeholderCard(s.type, s));
+                    }
+                }
+            }
+        } catch(e) {
+            console.error("Local storage fixed content load failed", e);
+        }
     }
 }
 
