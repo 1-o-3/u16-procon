@@ -323,8 +323,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
             }
-                }
-            }
         });
 
     } catch (e) {
