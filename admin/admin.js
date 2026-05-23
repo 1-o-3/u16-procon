@@ -241,15 +241,21 @@ function showFixedPreview() {
         
         previewHTML = `
             <h2 style="color: var(--primary); margin-bottom: 20px;">部門紹介 (競技部門) プレビュー</h2>
-            <div style="display: flex; flex-direction: column; gap: 20px; color: var(--text-main);">
-                <div style="background: rgba(26, 123, 196, 0.05); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left;">
-                    <div style="white-space: pre-wrap; line-height: 1.6;">${u16Content}</div>
-                    ${imgHtmlU16}
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; color: var(--text-main);">
+                <div style="flex: 1; min-width: 260px; background: rgba(26, 123, 196, 0.05); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">👦 U-16部門 (16歳以下対象)</h4>
+                        <div style="white-space: pre-wrap; line-height: 1.6;">${u16Content}</div>
+                        ${imgHtmlU16}
+                    </div>
                     ${linkHtmlU16}
                 </div>
-                <div style="background: rgba(241, 90, 34, 0.05); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left;">
-                    <div style="white-space: pre-wrap; line-height: 1.6;">${o16Content}</div>
-                    ${imgHtmlO16}
+                <div style="flex: 1; min-width: 260px; background: rgba(241, 90, 34, 0.05); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h4 style="color: var(--secondary); font-weight: 800; margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">🧑 O-16部門 (高校生対象)</h4>
+                        <div style="white-space: pre-wrap; line-height: 1.6;">${o16Content}</div>
+                        ${imgHtmlO16}
+                    </div>
                     ${linkHtmlO16}
                 </div>
             </div>
