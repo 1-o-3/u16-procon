@@ -1022,6 +1022,58 @@ function initFixedLogic() {
         });
     }
 
+    const imageInputU16 = document.getElementById('class-comp-image-input-u16');
+    if (imageInputU16) {
+        imageInputU16.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('画像サイズは最大5MBまでです。');
+                    e.target.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentClassCompImageU16 = e.target.result;
+                    const previewContainer = document.getElementById('class-comp-image-preview-u16');
+                    previewContainer.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = currentClassCompImageU16;
+                    img.style.height = '100px';
+                    img.style.borderRadius = '5px';
+                    previewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    const imageInputO16 = document.getElementById('class-comp-image-input-o16');
+    if (imageInputO16) {
+        imageInputO16.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('画像サイズは最大5MBまでです。');
+                    e.target.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentClassCompImageO16 = e.target.result;
+                    const previewContainer = document.getElementById('class-comp-image-preview-o16');
+                    previewContainer.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = currentClassCompImageO16;
+                    img.style.height = '100px';
+                    img.style.borderRadius = '5px';
+                    previewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
     document.getElementById('fixed-form').addEventListener('submit', handleFixedSubmit);
 
     const addSnsBtn = document.getElementById('add-sns-account-btn');
@@ -1031,23 +1083,27 @@ function initFixedLogic() {
 }
 
 let currentFixedImageBase64 = null;
+let currentClassCompImageU16 = null;
+let currentClassCompImageO16 = null;
 
 function updateFixedFormVisibility() {
     const isAbout = currentFixedCategory === 'ABOUT';
     const isSNS = currentFixedCategory === 'SNS';
-    const isClass = currentFixedCategory === 'CLASS_COMP' || currentFixedCategory === 'CLASS_WORK';
+    const isClassComp = currentFixedCategory === 'CLASS_COMP';
+    const isClassWork = currentFixedCategory === 'CLASS_WORK';
     const isStakeholders = currentFixedCategory === 'STAKEHOLDERS';
     
-    document.querySelector('.field-fixed-title').style.display = (isSNS || isStakeholders) ? 'none' : 'block';
-    document.querySelector('.field-fixed-content').style.display = (isSNS || isStakeholders) ? 'none' : 'block';
+    document.querySelector('.field-fixed-title').style.display = (isSNS || isStakeholders || isClassComp) ? 'none' : 'block';
+    document.querySelector('.field-fixed-content').style.display = (isSNS || isStakeholders || isClassComp) ? 'none' : 'block';
     
-    document.querySelector('.field-fixed-image').style.display = isClass ? 'block' : 'none';
-    document.querySelector('.field-fixed-link').style.display = isClass ? 'block' : 'none';
+    document.querySelector('.field-fixed-image').style.display = isClassWork ? 'block' : 'none';
+    document.querySelector('.field-fixed-link').style.display = isClassWork ? 'block' : 'none';
     
     document.querySelector('.field-fixed-sns').style.display = isSNS ? 'block' : 'none';
     document.querySelector('.field-fixed-stakeholders').style.display = isStakeholders ? 'block' : 'none';
+    document.querySelector('.field-fixed-class-comp').style.display = isClassComp ? 'block' : 'none';
     
-    if (isClass) {
+    if (isClassWork) {
         document.getElementById('fixed-content-label').textContent = "詳細 (改行・HTMLが反映されます)";
     } else {
         document.getElementById('fixed-content-label').textContent = "本文 / 詳細 (改行・HTMLが反映されます)";
@@ -1066,6 +1122,28 @@ async function fetchFixedData() {
     document.getElementById('fixed-content').value = '';
     document.getElementById('fixed-link').value = '';
     
+    // Reset CLASS_COMP specific fields
+    const classCompFields = [
+        'class-comp-title-u16', 'class-comp-content-u16', 'class-comp-link-u16',
+        'class-comp-title-o16', 'class-comp-content-o16', 'class-comp-link-o16'
+    ];
+    classCompFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const classCompPreviews = ['class-comp-image-preview-u16', 'class-comp-image-preview-o16'];
+    classCompPreviews.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+    const classCompInputs = ['class-comp-image-input-u16', 'class-comp-image-input-o16'];
+    classCompInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    currentClassCompImageU16 = null;
+    currentClassCompImageO16 = null;
+
     // Clear SNS accounts list
     const snsList = document.getElementById('sns-accounts-list');
     if (snsList) snsList.innerHTML = '';
@@ -1107,6 +1185,44 @@ async function fetchFixedData() {
                 const accounts = Array.isArray(sns) ? sns : legacySnsToArray(sns);
                 accounts.forEach(acc => addSnsAccountCard(acc));
             }
+            
+            // For CLASS_COMP, content holds JSON array of [{title, content, image, link}, ...]
+            if (currentFixedCategory === 'CLASS_COMP' && data.content) {
+                try {
+                    const parsed = JSON.parse(data.content);
+                    if (Array.isArray(parsed) && parsed.length >= 2) {
+                        const u16 = parsed[0];
+                        const o16 = parsed[1];
+                        
+                        document.getElementById('class-comp-title-u16').value = u16.title || '';
+                        document.getElementById('class-comp-content-u16').value = u16.content || '';
+                        document.getElementById('class-comp-link-u16').value = u16.link || '';
+                        if (u16.image) {
+                            currentClassCompImageU16 = u16.image;
+                            const img = document.createElement('img');
+                            img.src = u16.image;
+                            img.style.height = '100px';
+                            img.style.borderRadius = '5px';
+                            document.getElementById('class-comp-image-preview-u16').appendChild(img);
+                        }
+                        
+                        document.getElementById('class-comp-title-o16').value = o16.title || '';
+                        document.getElementById('class-comp-content-o16').value = o16.content || '';
+                        document.getElementById('class-comp-link-o16').value = o16.link || '';
+                        if (o16.image) {
+                            currentClassCompImageO16 = o16.image;
+                            const img = document.createElement('img');
+                            img.src = o16.image;
+                            img.style.height = '100px';
+                            img.style.borderRadius = '5px';
+                            document.getElementById('class-comp-image-preview-o16').appendChild(img);
+                        }
+                    }
+                } catch(e) {
+                    console.error("Failed to parse CLASS_COMP json", e);
+                }
+            }
+
             // Stakeholders: stored as JSON in content field
             if (currentFixedCategory === 'STAKEHOLDERS' && data.content) {
                 let stakeholders = data.content;
@@ -1146,6 +1262,44 @@ async function fetchFixedData() {
                     const accounts = Array.isArray(sns) ? sns : legacySnsToArray(sns);
                     accounts.forEach(acc => addSnsAccountCard(acc));
                 }
+
+                // For CLASS_COMP fallback
+                if (currentFixedCategory === 'CLASS_COMP' && data.content) {
+                    try {
+                        const parsed = JSON.parse(data.content);
+                        if (Array.isArray(parsed) && parsed.length >= 2) {
+                            const u16 = parsed[0];
+                            const o16 = parsed[1];
+                            
+                            document.getElementById('class-comp-title-u16').value = u16.title || '';
+                            document.getElementById('class-comp-content-u16').value = u16.content || '';
+                            document.getElementById('class-comp-link-u16').value = u16.link || '';
+                            if (u16.image) {
+                                currentClassCompImageU16 = u16.image;
+                                const img = document.createElement('img');
+                                img.src = u16.image;
+                                img.style.height = '100px';
+                                img.style.borderRadius = '5px';
+                                document.getElementById('class-comp-image-preview-u16').appendChild(img);
+                            }
+                            
+                            document.getElementById('class-comp-title-o16').value = o16.title || '';
+                            document.getElementById('class-comp-content-o16').value = o16.content || '';
+                            document.getElementById('class-comp-link-o16').value = o16.link || '';
+                            if (o16.image) {
+                                currentClassCompImageO16 = o16.image;
+                                const img = document.createElement('img');
+                                img.src = o16.image;
+                                img.style.height = '100px';
+                                img.style.borderRadius = '5px';
+                                document.getElementById('class-comp-image-preview-o16').appendChild(img);
+                            }
+                        }
+                    } catch(e) {
+                        console.error("Failed to parse CLASS_COMP fallback json", e);
+                    }
+                }
+
                 if (currentFixedCategory === 'STAKEHOLDERS' && data.content) {
                     let stakeholders = data.content;
                     if (typeof stakeholders === 'string') {
@@ -1306,13 +1460,14 @@ function getStakeholdersFromForm() {
 async function handleFixedSubmit(e) {
     e.preventDefault();
 
-    const title = document.getElementById('fixed-title').value;
-    const link = document.getElementById('fixed-link').value;
     const category = currentFixedCategory;
     const statusMsg = document.getElementById('fixed-status');
 
-    // For STAKEHOLDERS, serialize as JSON into content field
-    let content;
+    let title = null;
+    let link = null;
+    let image = null;
+    let content = null;
+
     if (category === 'STAKEHOLDERS') {
         const stakeholders = getStakeholdersFromForm();
         if (stakeholders.length === 0) {
@@ -1320,8 +1475,25 @@ async function handleFixedSubmit(e) {
             return;
         }
         content = JSON.stringify(stakeholders);
+    } else if (category === 'CLASS_COMP') {
+        const u16 = {
+            title: document.getElementById('class-comp-title-u16').value.trim() || 'U-16部門',
+            content: document.getElementById('class-comp-content-u16').value.trim(),
+            link: document.getElementById('class-comp-link-u16').value.trim(),
+            image: currentClassCompImageU16
+        };
+        const o16 = {
+            title: document.getElementById('class-comp-title-o16').value.trim() || 'O-16部門',
+            content: document.getElementById('class-comp-content-o16').value.trim(),
+            link: document.getElementById('class-comp-link-o16').value.trim(),
+            image: currentClassCompImageO16
+        };
+        content = JSON.stringify([u16, o16]);
     } else {
+        title = document.getElementById('fixed-title').value;
         content = document.getElementById('fixed-content').value;
+        link = document.getElementById('fixed-link').value;
+        image = currentFixedImageBase64;
     }
 
     const sns_data = getSnsAccountsFromForm();
@@ -1331,7 +1503,7 @@ async function handleFixedSubmit(e) {
         title, 
         content,
         link,
-        image: currentFixedImageBase64,
+        image,
         sns_data
     };
 

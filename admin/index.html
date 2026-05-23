@@ -510,6 +510,58 @@
                             <input type="url" id="fixed-link" placeholder="https://example.com/...">
                         </div>
                         
+                        <div class="form-group field-fixed-class-comp" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <p style="color: var(--text-dim); font-size: 0.95rem; margin-bottom: 20px;">📋 競技部門の「U-16部門」と「O-16部門」の2つ分の紹介記事を編集します。</p>
+                            
+                            <!-- U-16部門 -->
+                            <div style="background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(26,123,196,0.06);">
+                                <h4 style="color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid var(--primary-light); padding-bottom: 5px; font-size: 1.1rem; font-weight: 700;">👦 U-16部門 (15歳以下対象)</h4>
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    <div>
+                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">見出し / タイトル</label>
+                                        <input type="text" id="class-comp-title-u16" placeholder="例：U-16部門（15歳以下対象）" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">詳細 (改行・HTMLが反映されます)</label>
+                                        <textarea id="class-comp-content-u16" rows="4" placeholder="U-16部門の詳細説明を入力" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;"></textarea>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">画像 (1枚) ※最大5MB程度まで</label>
+                                        <input type="file" id="class-comp-image-input-u16" accept="image/*" style="width: 100%; padding: 5px; border: 1px solid var(--primary-light); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); background: #ffffff;">
+                                        <div id="class-comp-image-preview-u16" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">関連リンクURL</label>
+                                        <input type="url" id="class-comp-link-u16" placeholder="https://example.com/u16-details" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- O-16部門 -->
+                            <div style="background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(26,123,196,0.06);">
+                                <h4 style="color: var(--secondary); margin-bottom: 15px; border-bottom: 1px solid var(--primary-light); padding-bottom: 5px; font-size: 1.1rem; font-weight: 700;">🧑 O-16部門 (16歳以上対象)</h4>
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    <div>
+                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">見出し / タイトル</label>
+                                        <input type="text" id="class-comp-title-o16" placeholder="例：O-16部門（16歳以上対象）" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">詳細 (改行・HTMLが反映されます)</label>
+                                        <textarea id="class-comp-content-o16" rows="4" placeholder="O-16部門の詳細説明を入力" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;"></textarea>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">画像 (1枚) ※最大5MB程度まで</label>
+                                        <input type="file" id="class-comp-image-input-o16" accept="image/*" style="width: 100%; padding: 5px; border: 1px solid var(--primary-light); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); background: #ffffff;">
+                                        <div id="class-comp-image-preview-o16" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">関連リンクURL</label>
+                                        <input type="url" id="class-comp-link-o16" placeholder="https://example.com/o16-details" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group field-fixed-stakeholders" style="margin-bottom: 15px; text-align: left; display: none;">
                             <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px;">📋 主催・共催・協賛の団体・企業を登録します。団体名は必須、URLは任意です。</p>
 

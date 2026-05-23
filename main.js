@@ -158,20 +158,44 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const aboutEl = document.getElementById('hp-about-content');
                 if (aboutEl) aboutEl.innerHTML = item.content;
             } else if (item.category === 'CLASS_COMP') {
-                const titleEl = document.getElementById('hp-class-comp-title');
-                const contentEl = document.getElementById('hp-class-comp-content');
-                const imgContainer = document.getElementById('hp-class-comp-img-container');
-                
-                if (titleEl && item.title) titleEl.textContent = item.title;
-                if (contentEl && item.content) {
-                    contentEl.innerHTML = item.content;
-                    if (item.link) {
-                        contentEl.innerHTML += `<div style="margin-top: 15px;"><a href="${item.link}" target="_blank" class="btn-outline" style="padding: 8px 15px; font-size: 0.85rem;">もっと詳しく</a></div>`;
+                const compCard = document.getElementById('hp-class-comp');
+                if (compCard && item.content) {
+                    try {
+                        const parsed = JSON.parse(item.content);
+                        if (Array.isArray(parsed) && parsed.length >= 2) {
+                            const u16 = parsed[0];
+                            const o16 = parsed[1];
+
+                            const imgHtmlU16 = u16.image ? `<img src="${u16.image}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
+                            const linkHtmlU16 = u16.link ? `<div style="margin-top: 12px;"><a href="${u16.link}" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
+
+                            const imgHtmlO16 = o16.image ? `<img src="${o16.image}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
+                            const linkHtmlO16 = o16.link ? `<div style="margin-top: 12px;"><a href="${o16.link}" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
+
+                            compCard.innerHTML = `
+                                <div class="icon">競技</div>
+                                <h3 style="font-size: 1.5rem; color: var(--text-main); font-weight: 800; margin-bottom: 20px;">競技部門</h3>
+                                <div style="display: flex; flex-direction: column; gap: 20px;">
+                                    <div style="background: var(--primary-pale); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left;">
+                                        <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">👦 ${u16.title}</h4>
+                                        <div style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">${u16.content}</div>
+                                        ${imgHtmlU16}
+                                        ${linkHtmlU16}
+                                    </div>
+                                    <div style="background: var(--secondary-pale); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left;">
+                                        <h4 style="color: var(--secondary); font-weight: 800; margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">🧑 ${o16.title}</h4>
+                                        <div style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">${o16.content}</div>
+                                        ${imgHtmlO16}
+                                        ${linkHtmlO16}
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            renderLegacyClassComp(compCard, item);
+                        }
+                    } catch (e) {
+                        renderLegacyClassComp(compCard, item);
                     }
-                }
-                if (imgContainer && item.image) {
-                    imgContainer.innerHTML = `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
-                    imgContainer.style.border = 'none';
                 }
             } else if (item.category === 'CLASS_WORK') {
                 const titleEl = document.getElementById('hp-class-work-title');
@@ -606,3 +630,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">他所での開催情報の読み込みに失敗しました。</p>';
     }
 });
+
+function renderLegacyClassComp(compCard, item) {
+    const title = item.title || '競技部門';
+    const content = item.content || '';
+    const imgHtml = item.image ? `<div style="margin-top: 20px; height: 180px; overflow: hidden; border-radius: 12px;"><img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover;"></div>` : '';
+    const linkHtml = item.link ? `<div style="margin-top: 15px;"><a href="${item.link}" target="_blank" class="btn-outline" style="padding: 8px 15px; font-size: 0.85rem;">もっと詳しく</a></div>` : '';
+    compCard.innerHTML = `
+        <div class="icon">競技</div>
+        <h3>${title}</h3>
+        <div><p>${content}</p></div>
+        ${imgHtml}
+        ${linkHtml}
+    `;
+}
