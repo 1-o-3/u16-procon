@@ -166,28 +166,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const u16 = parsed[0];
                             const o16 = parsed[1];
 
-                            const imgHtmlU16 = u16.image ? `<img src="${u16.image}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
-                            const linkHtmlU16 = u16.link ? `<div style="margin-top: 12px;"><a href="${u16.link}" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
+                            const imgHtmlU16 = u16.image ? `<img src="${u16.image}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
+                            const linkHtmlU16 = u16.link ? `<div style="margin-top: 10px;"><a href="${u16.link}" target="_blank" class="btn-outline" style="padding: 6px 10px; font-size: 0.75rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
 
-                            const imgHtmlO16 = o16.image ? `<img src="${o16.image}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
-                            const linkHtmlO16 = o16.link ? `<div style="margin-top: 12px;"><a href="${o16.link}" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
+                            const imgHtmlO16 = o16.image ? `<img src="${o16.image}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
+                            const linkHtmlO16 = o16.link ? `<div style="margin-top: 10px;"><a href="${o16.link}" target="_blank" class="btn-outline" style="padding: 6px 10px; font-size: 0.75rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
 
                             compCard.innerHTML = `
                                 <div class="icon">競技</div>
                                 <h3 style="font-size: 1.5rem; color: var(--text-main); font-weight: 800; margin-bottom: 20px;">競技部門</h3>
-                                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                                    <div style="flex: 1; min-width: 280px; background: var(--primary-pale); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div style="display: flex; gap: 12px; flex-direction: row; flex-wrap: nowrap;">
+                                    <div style="flex: 1; min-width: 0; background: var(--primary-pale); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
                                         <div>
-                                            <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">👦 U-16部門 (16歳以下対象)</h4>
-                                            <div style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">${u16.content}</div>
+                                            <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.3;">
+                                                <span style="display: flex; align-items: center; gap: 4px;">👦 U-16部門</span>
+                                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-dim); display: block; margin-top: 2px;">(16歳以下対象)</span>
+                                            </h4>
+                                            <div style="color: var(--text-main); font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap;">${u16.content}</div>
                                             ${imgHtmlU16}
                                         </div>
                                         ${linkHtmlU16}
                                     </div>
-                                    <div style="flex: 1; min-width: 280px; background: var(--secondary-pale); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
+                                    <div style="flex: 1; min-width: 0; background: var(--secondary-pale); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
                                         <div>
-                                            <h4 style="color: var(--secondary); font-weight: 800; margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">🧑 O-16部門 (高校生対象)</h4>
-                                            <div style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">${o16.content}</div>
+                                            <h4 style="color: var(--secondary); font-weight: 800; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.3;">
+                                                <span style="display: flex; align-items: center; gap: 4px;">🧑 O-16部門</span>
+                                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-dim); display: block; margin-top: 2px;">(高校生対象)</span>
+                                            </h4>
+                                            <div style="color: var(--text-main); font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap;">${o16.content}</div>
                                             ${imgHtmlO16}
                                         </div>
                                         ${linkHtmlO16}
