@@ -254,6 +254,26 @@ function showFixedPreview() {
                 </div>
             </div>
         `;
+    } else if (category === 'TOOLS') {
+        const tools = getToolsFromForm();
+        previewHTML = `<h2 style="color: var(--primary); margin-bottom: 20px;">ツール紹介 プレビュー</h2>`;
+        if (tools.length > 0) {
+            previewHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; color: var(--text-main);">`;
+            tools.forEach(tool => {
+                const titleHtml = tool.url 
+                    ? `<h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px;"><a href="${tool.url}" target="_blank" style="color: var(--primary); text-decoration: none;">${tool.name} 🔗</a></h3>` 
+                    : `<h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">${tool.name}</h3>`;
+                previewHTML += `
+                    <div style="background: rgba(26, 123, 196, 0.05); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left;">
+                        ${titleHtml}
+                        <p style="color: var(--text-dim); font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; margin: 0;">${tool.description}</p>
+                    </div>
+                `;
+            });
+            previewHTML += `</div>`;
+        } else {
+            previewHTML += `<p style="color: var(--text-dim);">（ツール未登録）</p>`;
+        }
     } else {
         const title = document.getElementById('fixed-title').value || '（見出し未入力）';
         const content = document.getElementById('fixed-content').value || '';
@@ -468,6 +488,14 @@ function showAdminPanel() {
                 category: 'CLASS_WORK',
                 title: '部門紹介 (作品部門)',
                 content: '自由なアイデアでWebサイト、アプリ、ゲームなどを制作する部門です。技術的な完成度だけでなく、独創性や社会への有用性が評価されます。'
+            },
+            {
+                category: 'TOOLS',
+                title: 'ツール紹介',
+                content: JSON.stringify([
+                    { name: 'Scratch', url: 'https://scratch.mit.edu', description: 'ビジュアルプログラミング言語。ドラッグ＆ドロップで簡単にプログラムを作ることができます。' },
+                    { name: 'Unity', url: 'https://unity.com/ja', description: '本格的な3D/2Dゲーム開発エンジン。多くのインディーゲームや商業ゲームで使用されています。' }
+                ])
             }
         ];
         localStorage.setItem('mockFixedData', JSON.stringify(defaultFixed));
@@ -1115,6 +1143,11 @@ function initFixedLogic() {
     if (addSnsBtn) {
         addSnsBtn.addEventListener('click', () => addSnsAccountCard());
     }
+
+    const addToolBtn = document.getElementById('add-tool-btn');
+    if (addToolBtn) {
+        addToolBtn.addEventListener('click', () => addToolCard());
+    }
 }
 
 let currentFixedImageBase64 = null;
@@ -1127,9 +1160,10 @@ function updateFixedFormVisibility() {
     const isClassComp = currentFixedCategory === 'CLASS_COMP';
     const isClassWork = currentFixedCategory === 'CLASS_WORK';
     const isStakeholders = currentFixedCategory === 'STAKEHOLDERS';
+    const isTools = currentFixedCategory === 'TOOLS';
     
-    document.querySelector('.field-fixed-title').style.display = (isSNS || isStakeholders || isClassComp) ? 'none' : 'block';
-    document.querySelector('.field-fixed-content').style.display = (isSNS || isStakeholders || isClassComp) ? 'none' : 'block';
+    document.querySelector('.field-fixed-title').style.display = (isSNS || isStakeholders || isClassComp || isTools) ? 'none' : 'block';
+    document.querySelector('.field-fixed-content').style.display = (isSNS || isStakeholders || isClassComp || isTools) ? 'none' : 'block';
     
     document.querySelector('.field-fixed-image').style.display = isClassWork ? 'block' : 'none';
     document.querySelector('.field-fixed-link').style.display = isClassWork ? 'block' : 'none';
@@ -1137,6 +1171,7 @@ function updateFixedFormVisibility() {
     document.querySelector('.field-fixed-sns').style.display = isSNS ? 'block' : 'none';
     document.querySelector('.field-fixed-stakeholders').style.display = isStakeholders ? 'block' : 'none';
     document.querySelector('.field-fixed-class-comp').style.display = isClassComp ? 'block' : 'none';
+    document.querySelector('.field-fixed-tools').style.display = isTools ? 'block' : 'none';
     
     if (isClassWork) {
         document.getElementById('fixed-content-label').textContent = "詳細 (改行・HTMLが反映されます)";
@@ -1182,6 +1217,10 @@ async function fetchFixedData() {
     // Clear SNS accounts list
     const snsList = document.getElementById('sns-accounts-list');
     if (snsList) snsList.innerHTML = '';
+    
+    // Clear tools list
+    const toolsList = document.getElementById('tools-list');
+    if (toolsList) toolsList.innerHTML = '';
     
     // Clear stakeholder lists
     ['主催', '共催', '協賛', '後援'].forEach(type => {
@@ -1266,6 +1305,18 @@ async function fetchFixedData() {
                     stakeholders.forEach(s => addStakeholderCard(s.type, s));
                 }
             }
+
+            // TOOLS: stored as JSON in content field
+            if (currentFixedCategory === 'TOOLS' && data.content) {
+                try {
+                    const tools = JSON.parse(data.content);
+                    if (Array.isArray(tools)) {
+                        tools.forEach(tool => addToolCard(tool));
+                    }
+                } catch(e) {
+                    console.error("Failed to parse tools json", e);
+                }
+            }
         }
     } catch (error) {
         console.error(error);
@@ -1340,6 +1391,18 @@ async function fetchFixedData() {
                         stakeholders.forEach(s => addStakeholderCard(s.type, s));
                     }
                 }
+                
+                // TOOLS fallback
+                if (currentFixedCategory === 'TOOLS' && data.content) {
+                    try {
+                        const tools = JSON.parse(data.content);
+                        if (Array.isArray(tools)) {
+                            tools.forEach(tool => addToolCard(tool));
+                        }
+                    } catch(e) {
+                        console.error("Failed to parse tools fallback json", e);
+                    }
+                }
             }
         } catch(e) {
             console.error("Local storage fixed content load failed", e);
@@ -1410,6 +1473,53 @@ function getSnsAccountsFromForm() {
         const comment = card.querySelector('.sns-field-comment').value.trim();
         if (service || id || link) {
             result.push({ service, id, link, comment });
+        }
+    });
+    return result;
+}
+
+function addToolCard(data = {}) {
+    const list = document.getElementById('tools-list');
+    if (!list) return;
+
+    const idx = list.children.length;
+    const card = document.createElement('div');
+    card.dataset.toolCard = idx;
+    card.style.cssText = 'background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; padding: 20px; position: relative; box-shadow: 0 2px 8px rgba(26,123,196,0.06);';
+
+    card.innerHTML = `
+        <button type="button" onclick="this.closest('[data-tool-card]').remove()" 
+            style="position: absolute; top: 15px; right: 15px; background: rgba(214, 48, 49, 0.1); border: 1px solid rgba(214, 48, 49, 0.2); color: #d63031; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">削除</button>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">ツール名 <span style="color: #ff8080;">*必須</span></label>
+                <input type="text" class="tool-field-name" value="${data.name || ''}" placeholder="Scratch" required
+                    style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">URL (関連サイト・ダウンロードURL)</label>
+                <input type="url" class="tool-field-url" value="${data.url || ''}" placeholder="https://scratch.mit.edu" 
+                    style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">詳細説明 (改行も反映されます)</label>
+                <textarea class="tool-field-description" rows="3" placeholder="ビジュアルプログラミング言語。ドラッグ＆ドロップで簡単にプログラムを作ることができます。"
+                    style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit; resize: vertical;">${data.description || ''}</textarea>
+            </div>
+        </div>
+    `;
+    list.appendChild(card);
+}
+
+function getToolsFromForm() {
+    const cards = document.querySelectorAll('#tools-list [data-tool-card]');
+    const result = [];
+    cards.forEach(card => {
+        const name = card.querySelector('.tool-field-name').value.trim();
+        const url = card.querySelector('.tool-field-url').value.trim();
+        const description = card.querySelector('.tool-field-description').value.trim();
+        if (name) {
+            result.push({ name, url, description });
         }
     });
     return result;
@@ -1506,6 +1616,13 @@ async function handleFixedSubmit(e) {
             return;
         }
         content = JSON.stringify(stakeholders);
+    } else if (category === 'TOOLS') {
+        const tools = getToolsFromForm();
+        if (tools.length === 0) {
+            alert('少なくとも1件のツールを登録してください。');
+            return;
+        }
+        content = JSON.stringify(tools);
     } else if (category === 'CLASS_COMP') {
         const u16 = {
             content: document.getElementById('class-comp-content-u16').value.trim(),

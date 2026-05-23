@@ -291,6 +291,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (coHtml) coEl.innerHTML = coHtml;
                     }
                 }
+            } else if (item.category === 'TOOLS' && item.content) {
+                const toolsContainer = document.getElementById('hp-tools-container');
+                if (toolsContainer) {
+                    try {
+                        const tools = JSON.parse(item.content);
+                        if (Array.isArray(tools) && tools.length > 0) {
+                            let html = '';
+                            tools.forEach(tool => {
+                                const titleHtml = tool.url 
+                                    ? `<h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 10px;"><a href="${tool.url}" target="_blank" style="color: var(--primary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--secondary)'" onmouseout="this.style.color='var(--primary)'">${tool.name} 🔗</a></h3>` 
+                                    : `<h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px;">${tool.name}</h3>`;
+                                
+                                html += `
+                                    <div class="glass reveal-on-scroll" style="padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 30px rgba(26, 123, 196, 0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                                        ${titleHtml}
+                                        <p style="color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0; flex-grow: 1;">${tool.description}</p>
+                                    </div>
+                                `;
+                            });
+                            toolsContainer.innerHTML = html;
+                            document.querySelectorAll('#hp-tools-container .reveal-on-scroll').forEach(el => {
+                                observer.observe(el);
+                            });
+                        } else {
+                            toolsContainer.innerHTML = '<p style="text-align: center; color: var(--text-dim); padding: 20px; grid-column: 1/-1;" class="glass">現在紹介されているツールはありません。</p>';
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse tools json", e);
+                        toolsContainer.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px; grid-column: 1/-1;" class="glass">ツール情報の解析に失敗しました。</p>';
+                    }
+                }
+            }
+                }
             }
         });
 

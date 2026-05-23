@@ -481,6 +481,7 @@
                                 <option value="ABOUT">ABOUT (U-16プロコンとは)</option>
                                 <option value="CLASS_COMP">部門紹介 (競技部門)</option>
                                 <option value="CLASS_WORK">部門紹介 (作品部門)</option>
+                                <option value="TOOLS">ツール紹介</option>
                                 <option value="SNS">SNS</option>
                                 <option value="STAKEHOLDERS">関係者 (主催・共催・協賛)</option>
                             </select>
@@ -600,6 +601,15 @@
                             </div>
                             <button type="button" id="add-sns-account-btn" class="btn-outline" style="width: 100%; padding: 12px; font-size: 0.95rem;">
                                 ＋ SNSアカウントを追加する
+                            </button>
+                        </div>
+                        <div class="form-group field-fixed-tools" style="margin-bottom: 15px; text-align: left; display: none;">
+                            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 15px;">🛠️ ホーム画面に表示する開発環境や役立つツールを登録します。ツール名、URL、詳細説明を入力してください。</p>
+                            <div id="tools-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
+                                <!-- Tool cards will be injected here -->
+                            </div>
+                            <button type="button" id="add-tool-btn" class="btn-outline" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+                                ＋ ツールを追加する
                             </button>
                         </div>
                         <div id="fixed-status" class="status-msg" style="margin-top: 15px;"></div>
