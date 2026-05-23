@@ -578,4 +578,14 @@ select, select option, option {
     .hero-content h1 { font-size: 2.8rem; }
     nav ul { display: none; }
     .footer-content { flex-direction: column; gap: 40px; }
+    
+    .category-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+    
+    .glass {
+        padding: 25px;
+    }
 }
