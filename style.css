@@ -127,6 +127,24 @@ nav a:hover {
     background: linear-gradient(145deg, #deeeff 0%, #f0f6ff 40%, #fff4ee 100%);
 }
 
+@media (min-width: 769px) {
+    #hero {
+        height: 75vh;
+        min-height: 550px;
+        max-height: 700px;
+        padding-top: 80px;
+    }
+    .hero-content h2 {
+        margin-bottom: 12px !important;
+    }
+    .hero-content h1 {
+        margin-bottom: 20px !important;
+    }
+    .hero-content p {
+        margin-bottom: 30px !important;
+    }
+}
+
 /* 飾り用の波紋エフェクト */
 #hero::before {
     content: '';
@@ -251,6 +269,15 @@ nav a:hover {
 
 .section-title {
     margin-bottom: 60px;
+}
+
+@media (min-width: 769px) {
+    .section {
+        padding: 80px 0;
+    }
+    .section-title {
+        margin-bottom: 40px;
+    }
 }
 
 .subtitle {
