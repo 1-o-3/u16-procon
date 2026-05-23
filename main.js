@@ -173,8 +173,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const linkHtmlO16 = o16.link ? `<div style="margin-top: 10px;"><a href="${o16.link}" target="_blank" class="btn-outline" style="padding: 6px 10px; font-size: 0.75rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
 
                             compCard.innerHTML = `
-                                <div class="icon">競技</div>
-                                <h3 style="font-size: 1.5rem; color: var(--text-main); font-weight: 800; margin-bottom: 20px;">競技部門</h3>
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                                    <div class="icon" style="margin-bottom: 0;">競技</div>
+                                    <h3 style="font-size: 1.5rem; color: var(--text-main); font-weight: 800; margin-bottom: 0;">競技部門</h3>
+                                </div>
                                 <div style="display: flex; gap: 12px; flex-direction: row; flex-wrap: nowrap;">
                                     <div style="flex: 1; min-width: 0; background: var(--primary-pale); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
                                         <div>
