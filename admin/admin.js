@@ -1124,8 +1124,8 @@ async function fetchFixedData() {
     
     // Reset CLASS_COMP specific fields
     const classCompFields = [
-        'class-comp-title-u16', 'class-comp-content-u16', 'class-comp-link-u16',
-        'class-comp-title-o16', 'class-comp-content-o16', 'class-comp-link-o16'
+        'class-comp-content-u16', 'class-comp-link-u16',
+        'class-comp-content-o16', 'class-comp-link-o16'
     ];
     classCompFields.forEach(id => {
         const el = document.getElementById(id);
@@ -1186,7 +1186,7 @@ async function fetchFixedData() {
                 accounts.forEach(acc => addSnsAccountCard(acc));
             }
             
-            // For CLASS_COMP, content holds JSON array of [{title, content, image, link}, ...]
+            // For CLASS_COMP, content holds JSON array of [{content, image, link}, ...]
             if (currentFixedCategory === 'CLASS_COMP' && data.content) {
                 try {
                     const parsed = JSON.parse(data.content);
@@ -1194,7 +1194,6 @@ async function fetchFixedData() {
                         const u16 = parsed[0];
                         const o16 = parsed[1];
                         
-                        document.getElementById('class-comp-title-u16').value = u16.title || '';
                         document.getElementById('class-comp-content-u16').value = u16.content || '';
                         document.getElementById('class-comp-link-u16').value = u16.link || '';
                         if (u16.image) {
@@ -1206,7 +1205,6 @@ async function fetchFixedData() {
                             document.getElementById('class-comp-image-preview-u16').appendChild(img);
                         }
                         
-                        document.getElementById('class-comp-title-o16').value = o16.title || '';
                         document.getElementById('class-comp-content-o16').value = o16.content || '';
                         document.getElementById('class-comp-link-o16').value = o16.link || '';
                         if (o16.image) {
@@ -1271,7 +1269,6 @@ async function fetchFixedData() {
                             const u16 = parsed[0];
                             const o16 = parsed[1];
                             
-                            document.getElementById('class-comp-title-u16').value = u16.title || '';
                             document.getElementById('class-comp-content-u16').value = u16.content || '';
                             document.getElementById('class-comp-link-u16').value = u16.link || '';
                             if (u16.image) {
@@ -1283,7 +1280,6 @@ async function fetchFixedData() {
                                 document.getElementById('class-comp-image-preview-u16').appendChild(img);
                             }
                             
-                            document.getElementById('class-comp-title-o16').value = o16.title || '';
                             document.getElementById('class-comp-content-o16').value = o16.content || '';
                             document.getElementById('class-comp-link-o16').value = o16.link || '';
                             if (o16.image) {
@@ -1477,13 +1473,11 @@ async function handleFixedSubmit(e) {
         content = JSON.stringify(stakeholders);
     } else if (category === 'CLASS_COMP') {
         const u16 = {
-            title: document.getElementById('class-comp-title-u16').value.trim() || 'U-16部門',
             content: document.getElementById('class-comp-content-u16').value.trim(),
             link: document.getElementById('class-comp-link-u16').value.trim(),
             image: currentClassCompImageU16
         };
         const o16 = {
-            title: document.getElementById('class-comp-title-o16').value.trim() || 'O-16部門',
             content: document.getElementById('class-comp-content-o16').value.trim(),
             link: document.getElementById('class-comp-link-o16').value.trim(),
             image: currentClassCompImageO16
