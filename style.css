@@ -301,6 +301,15 @@ nav a:hover {
     gap: 30px;
 }
 
+@media (min-width: 769px) {
+    .category-grid {
+        grid-template-columns: 2fr 1fr;
+    }
+    #hp-class-comp {
+        padding: 40px 25px;
+    }
+}
+
 .category-card .icon {
     width: 60px;
     height: 60px;
