@@ -221,11 +221,46 @@ function showNewsPreview() {
 }
 
 function showFixedPreview() {
-    const title = document.getElementById('fixed-title').value || '（見出し未入力）';
-    const content = document.getElementById('fixed-content').value || '';
+    const category = currentFixedCategory;
+    let previewHTML = '';
     
-    let previewHTML = `<h2 style="color: var(--primary); margin-bottom: 15px;">${title}</h2>`;
-    previewHTML += `<div style="white-space: pre-wrap; line-height: 1.6;">${content}</div>`;
+    if (category === 'CLASS_COMP') {
+        const u16Content = document.getElementById('class-comp-content-u16').value || '';
+        const u16Link = document.getElementById('class-comp-link-u16').value || '';
+        const u16Img = currentClassCompImageU16;
+        
+        const o16Content = document.getElementById('class-comp-content-o16').value || '';
+        const o16Link = document.getElementById('class-comp-link-o16').value || '';
+        const o16Img = currentClassCompImageO16;
+        
+        const imgHtmlU16 = u16Img ? `<img src="${u16Img}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
+        const linkHtmlU16 = u16Link ? `<div style="margin-top: 12px;"><a href="${u16Link}" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
+        
+        const imgHtmlO16 = o16Img ? `<img src="${o16Img}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
+        const linkHtmlO16 = o16Link ? `<div style="margin-top: 12px;"><a href="${o16Link}" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
+        
+        previewHTML = `
+            <h2 style="color: var(--primary); margin-bottom: 20px;">部門紹介 (競技部門) プレビュー</h2>
+            <div style="display: flex; flex-direction: column; gap: 20px; color: var(--text-main);">
+                <div style="background: rgba(26, 123, 196, 0.05); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left;">
+                    <div style="white-space: pre-wrap; line-height: 1.6;">${u16Content}</div>
+                    ${imgHtmlU16}
+                    ${linkHtmlU16}
+                </div>
+                <div style="background: rgba(241, 90, 34, 0.05); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left;">
+                    <div style="white-space: pre-wrap; line-height: 1.6;">${o16Content}</div>
+                    ${imgHtmlO16}
+                    ${linkHtmlO16}
+                </div>
+            </div>
+        `;
+    } else {
+        const title = document.getElementById('fixed-title').value || '（見出し未入力）';
+        const content = document.getElementById('fixed-content').value || '';
+        
+        previewHTML = `<h2 style="color: var(--primary); margin-bottom: 15px;">${title}</h2>`;
+        previewHTML += `<div style="white-space: pre-wrap; line-height: 1.6;">${content}</div>`;
+    }
     
     document.getElementById('preview-container').innerHTML = previewHTML;
     document.getElementById('preview-modal').classList.add('active');
