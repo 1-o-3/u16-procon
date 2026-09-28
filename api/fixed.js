@@ -18,6 +18,7 @@ async function ensureTableExists() {
         await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS image TEXT;`;
         await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS link TEXT;`;
         await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS sns_data JSONB;`;
+        await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS entry_url TEXT;`;
         await sql`ALTER TABLE fixed_content_table ALTER COLUMN content DROP NOT NULL;`;
     } catch(e) {
         console.error("Alter columns failed on fixed_content_table", e);
@@ -52,7 +53,7 @@ export default async function handler(request, response) {
         }
 
         if (request.method === 'POST' || request.method === 'PUT') {
-            const { category, title, content, image, link, sns_data } = request.body;
+            const { category, title, content, image, link, sns_data, entry_url } = request.body;
             if (!category) throw new Error('Missing required fields');
 
             // Ensure content is never null to handle potential NOT NULL constraint
@@ -63,12 +64,13 @@ export default async function handler(request, response) {
 
             if (existing.rowCount > 0) {
                 const { rows } = await sql`
-                    UPDATE fixed_content_table 
-                    SET title = ${safeTitle}, 
-                        content = ${safeContent}, 
-                        image = ${image || null}, 
-                        link = ${link || null}, 
-                        sns_data = ${sns_data ? JSON.stringify(sns_data) : null}, 
+                    UPDATE fixed_content_table
+                    SET title = ${safeTitle},
+                        content = ${safeContent},
+                        image = ${image || null},
+                        link = ${link || null},
+                        sns_data = ${sns_data ? JSON.stringify(sns_data) : null},
+                        entry_url = ${entry_url || null},
                         updated_at = CURRENT_TIMESTAMP
                     WHERE category = ${category}
                     RETURNING *;
@@ -76,8 +78,8 @@ export default async function handler(request, response) {
                 return response.status(200).json(rows[0]);
             } else {
                 const { rows } = await sql`
-                    INSERT INTO fixed_content_table (category, title, content, image, link, sns_data)
-                    VALUES (${category}, ${safeTitle}, ${safeContent}, ${image || null}, ${link || null}, ${sns_data ? JSON.stringify(sns_data) : null})
+                    INSERT INTO fixed_content_table (category, title, content, image, link, sns_data, entry_url)
+                    VALUES (${category}, ${safeTitle}, ${safeContent}, ${image || null}, ${link || null}, ${sns_data ? JSON.stringify(sns_data) : null}, ${entry_url || null})
                     RETURNING *;
                 `;
                 return response.status(201).json(rows[0]);

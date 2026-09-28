@@ -28,6 +28,7 @@ async function ensureTableExists() {
         await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS is_past BOOLEAN DEFAULT FALSE;`;
         await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS past_images JSONB;`;
         await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS participant_comments JSONB;`;
+        await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS poster_image TEXT;`;
     } catch(e) {
         console.error("Alter columns failed on news_table", e);
     }
@@ -73,19 +74,19 @@ export default async function handler(request, response) {
         }
 
         if (request.method === 'POST') {
-            const { category, title, content, start_date, start_time, end_time, location, map_url, overview_url, application_url, target_age, divisions, images, past_images, participant_comments, prefecture, participants, is_tentative, is_past } = request.body;
+            const { category, title, content, start_date, start_time, end_time, location, map_url, overview_url, application_url, target_age, divisions, images, past_images, participant_comments, prefecture, participants, is_tentative, is_past, poster_image } = request.body;
             if (!category || !title) throw new Error('Missing required fields');
 
             const { rows } = await sql`
                 INSERT INTO news_table (
                     category, title, content, start_date, start_time, end_time,
                     location, map_url, overview_url, application_url, target_age, divisions, images, past_images, participant_comments,
-                    prefecture, participants, is_tentative, is_past
+                    prefecture, participants, is_tentative, is_past, poster_image
                 )
                 VALUES (
                     ${category}, ${title}, ${content}, ${start_date || null}, ${start_time || null}, ${end_time || null},
                     ${location || null}, ${map_url || null}, ${overview_url || null}, ${application_url || null}, ${target_age || null}, ${divisions ? JSON.stringify(divisions) : null}, ${images ? JSON.stringify(images) : null}, ${past_images ? JSON.stringify(past_images) : null}, ${participant_comments ? JSON.stringify(participant_comments) : null},
-                    ${prefecture || null}, ${participants || null}, ${is_tentative || false}, ${is_past || false}
+                    ${prefecture || null}, ${participants || null}, ${is_tentative || false}, ${is_past || false}, ${poster_image || null}
                 )
                 RETURNING *;
             `;
@@ -93,13 +94,13 @@ export default async function handler(request, response) {
         }
 
         if (request.method === 'PUT') {
-            const { id, category, title, content, start_date, start_time, end_time, location, map_url, overview_url, application_url, target_age, divisions, images, past_images, participant_comments, prefecture, participants, is_tentative, is_past } = request.body;
+            const { id, category, title, content, start_date, start_time, end_time, location, map_url, overview_url, application_url, target_age, divisions, images, past_images, participant_comments, prefecture, participants, is_tentative, is_past, poster_image } = request.body;
             if (!id || !title) throw new Error('Missing required fields');
 
             const { rows } = await sql`
-                UPDATE news_table 
-                SET category = ${category}, 
-                    title = ${title}, 
+                UPDATE news_table
+                SET category = ${category},
+                    title = ${title},
                     content = ${content},
                     start_date = ${start_date || null},
                     start_time = ${start_time || null},
@@ -116,7 +117,8 @@ export default async function handler(request, response) {
                     prefecture = ${prefecture || null},
                     participants = ${participants || null},
                     is_tentative = ${is_tentative || false},
-                    is_past = ${is_past || false}
+                    is_past = ${is_past || false},
+                    poster_image = ${poster_image || null}
                 WHERE id = ${id}
                 RETURNING *;
             `;

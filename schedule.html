@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>U-16プログラミングコンテスト 静岡大会 | 未来を創る、キミのコード。</title>
-    <meta name="description" content="静岡県の小・中・高校生を対象としたプログラミングコンテスト「U-16プログラミングコンテスト 静岡大会（ジュニアプロコン in 静岡）」の公式サイトです。">
+    <title>開催情報 | U-16プログラミングコンテスト 静岡大会</title>
+    <meta name="description" content="U-16プログラミングコンテスト静岡大会の今期の開催情報・過去の開催情報を掲載しています。">
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="stylesheet" href="/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +13,50 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700;900&display=swap"
         rel="stylesheet">
-    <meta name="google-site-verification" content="alOGACGGHquMxwvZdT8NRFcg4mMzBOoo2hBQ_HUI1Dc" />
+    <style>
+        .schedule-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .schedule-tab {
+            background: white;
+            border: 1.5px solid var(--primary-light);
+            color: var(--text-dim);
+            padding: 12px 28px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .schedule-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(26, 123, 196, 0.30);
+        }
+
+        .schedule-tab:not(.active):hover {
+            background: var(--primary-pale);
+            color: var(--primary);
+        }
+
+        .schedule-pane {
+            display: none;
+        }
+
+        .schedule-pane.active {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+    </style>
 </head>
 
 <body>
@@ -44,50 +87,35 @@
 
     <div class="page-body">
         <main>
-            <section id="hero" class="full-screen">
-                <div class="hero-bg"></div>
-                <div class="hero-content container">
-                    <h2 class="reveal">2026 EDITION</h2>
-                    <h1 class="reveal delay-1">未来を創る、<br><span class="highlight">キミのコード。</span></h1>
-                    <p class="reveal delay-2">U-16プログラミングコンテスト 静岡大会<br>（ジュニアプロコン in 静岡）</p>
-                    <div class="hero-btns reveal delay-3">
-                        <a href="/about.html" class="btn-outline">詳細を見る</a>
-                        <a href="/entry-form/index.html" class="btn-glow">今すぐエントリー</a>
-                    </div>
-                </div>
-                <div class="scroll-indicator">
-                    <span>SCROLL</span>
-                    <div class="line"></div>
-                </div>
-            </section>
+            <div class="page-header container">
+                <span class="subtitle">SCHEDULE</span>
+                <h2>開催情報</h2>
+                <div class="title-line" style="margin-left: auto; margin-right: auto;"></div>
+            </div>
 
-            <section id="news" class="section" style="padding-top: 50px;">
+            <section class="section" style="padding-top: 0;">
                 <div class="container">
-                    <div class="section-title">
-                        <span class="subtitle">NEWS / ARTICLES</span>
-                        <h2>お知らせ・最新情報</h2>
-                        <div class="title-line"></div>
+                    <div class="schedule-tabs">
+                        <button class="schedule-tab active" data-target="schedule-current">今期の開催情報</button>
+                        <button class="schedule-tab" data-target="schedule-past">過去の開催情報</button>
                     </div>
-                    <div id="home-news-container" style="display: flex; flex-direction: column; gap: 15px;">
-                        <p style="text-align: center; color: var(--text-dim); padding: 20px;" class="glass">お知らせを読み込んでいます...</p>
-                    </div>
-                </div>
-            </section>
 
-            <!-- SNSアカウントが1件以上登録されている場合のみ、main.jsが表示に切り替える(未登録時は非表示のまま) -->
-            <section id="sns-section" class="section" style="display: none; padding-top: 0;">
-                <div class="container">
-                    <div class="section-title">
-                        <span class="subtitle">COMMUNITY</span>
-                        <h2>SNS</h2>
-                        <div class="title-line"></div>
+                    <div id="schedule-current" class="schedule-pane active">
+                        <div id="home-current-container" style="display: flex; flex-direction: column; gap: 20px;">
+                            <p style="text-align: center; color: var(--text-dim); padding: 20px;" class="glass">開催情報を読み込んでいます...</p>
+                        </div>
                     </div>
-                    <div id="hp-sns-container"></div>
+
+                    <div id="schedule-past" class="schedule-pane">
+                        <div id="home-past-container" style="display: flex; flex-direction: column; gap: 20px;">
+                            <p style="text-align: center; color: var(--text-dim); padding: 20px;" class="glass">過去の開催情報を読み込んでいます...</p>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
 
-        <footer>
+        <footer style="margin-top: 0;">
             <div class="container">
                 <div class="footer-content">
                     <div class="footer-info">

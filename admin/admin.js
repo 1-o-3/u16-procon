@@ -4,22 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showAdminPanel();
     }
 
-    // Tab switching logic
-    const tabs = document.querySelectorAll('.admin-tab');
-    const panes = document.querySelectorAll('.admin-pane');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const targetId = tab.getAttribute('data-target');
-            
-            // Remove active classes
-            tabs.forEach(t => t.classList.remove('active'));
-            panes.forEach(p => p.classList.remove('active'));
-            
-            // Add active to clicked
-            tab.classList.add('active');
-            document.getElementById(targetId).classList.add('active');
-        });
+    // サイドメニューの切り替えロジック
+    document.querySelectorAll('#admin-sidebar-nav button[data-section]').forEach(btn => {
+        btn.addEventListener('click', () => switchAdminSection(btn.dataset.section));
     });
 
     // Login Form logic
@@ -88,14 +75,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // News Event Listeners
     initNewsLogic();
-    
+
     // Fixed Content Event Listeners
     initFixedLogic();
+
+    // 規約・ポリシーPDFのEvent Listeners
+    initPolicyLogic();
 });
+
+// ======================
+// サイドメニュー セクション切り替え
+// ======================
+const ADMIN_SECTIONS = {
+    'dashboard':           { panel: 'panel-dashboard' },
+    'qa':                  { panel: 'panel-qa' },
+    'news-notice':         { panel: 'panel-news', newsCategory: 'お知らせ', target: 'HOMEページ「お知らせ・最新情報」に表示されます' },
+    'news-current':        { panel: 'panel-news', newsCategory: '今期の開催情報', target: '開催情報ページ「今期の開催情報」タブに表示されます' },
+    'news-past':           { panel: 'panel-news', newsCategory: '過去の開催情報', target: '開催情報ページ「過去の開催情報」タブに表示されます(今期からのアーカイブ移行もここで操作)' },
+    'fixed-about':         { panel: 'panel-fixed', fixedCategory: 'ABOUT', label: 'ABOUT (大会について)', target: '大会についてページ上部の概要文に表示されます' },
+    'fixed-class-comp':    { panel: 'panel-fixed', fixedCategory: 'CLASS_COMP', label: '競技部門', target: '大会についてページ「部門紹介」内、競技部門カードに表示されます' },
+    'fixed-class-work':    { panel: 'panel-fixed', fixedCategory: 'CLASS_WORK', label: '作品部門', target: '大会についてページ「部門紹介」内、作品部門カードに表示されます' },
+    'fixed-tools':         { panel: 'panel-fixed', fixedCategory: 'TOOLS', label: 'ツール紹介', target: '大会についてページ「ツール紹介」セクションに表示されます' },
+    'fixed-sns':           { panel: 'panel-fixed', fixedCategory: 'SNS', label: 'SNS', target: '共有情報：HOMEページに表示されます(1件以上登録すると自動的に表示され、0件なら自動的に非表示になります)' },
+    'fixed-stakeholders':  { panel: 'panel-fixed', fixedCategory: 'STAKEHOLDERS', label: 'スポンサー (主催・共催・協賛・後援)', target: 'スポンサーページにグループごとに表示されます' },
+    'terms':               { panel: 'panel-terms' },
+    'privacy':             { panel: 'panel-privacy' },
+};
+
+function switchAdminSection(section) {
+    const cfg = ADMIN_SECTIONS[section];
+    if (!cfg) return;
+
+    document.querySelectorAll('#admin-sidebar-nav button[data-section]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.section === section);
+    });
+
+    document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+    const panelEl = document.getElementById(cfg.panel);
+    if (panelEl) panelEl.classList.add('active');
+
+    if (cfg.newsCategory) {
+        currentNewsCategory = cfg.newsCategory;
+        const titleEl = document.getElementById('news-panel-title');
+        if (titleEl) titleEl.textContent = cfg.newsCategory === '過去の開催情報' ? '記事投稿 (過去の開催情報アーカイブ)' : '記事投稿 (' + cfg.newsCategory + ')';
+        const displayCat = document.getElementById('current-news-category');
+        if (displayCat) displayCat.textContent = cfg.newsCategory;
+        const listCat = document.getElementById('news-list-category');
+        if (listCat) listCat.textContent = cfg.newsCategory;
+        const targetEl = document.getElementById('news-panel-target');
+        if (targetEl) targetEl.textContent = cfg.target || '';
+
+        updateNewsFormVisibility(cfg.newsCategory);
+
+        document.getElementById('news-form').reset();
+        currentImagesBase64 = [];
+        document.getElementById('image-preview-container').innerHTML = '';
+        currentPosterBase64 = null;
+        document.getElementById('poster-preview-container').innerHTML = '';
+
+        document.getElementById('news-id').value = '';
+        document.getElementById('news-submit-btn').textContent = cfg.newsCategory === '過去の開催情報' ? '過去の大会としてアーカイブする' : '投稿する';
+        document.getElementById('news-cancel-btn').style.display = 'none';
+        renderSubdivisions(["競技部門 (U-16)"]);
+        syncCompSubdivisions();
+        fetchNewsData();
+    }
+
+    if (cfg.fixedCategory) {
+        currentFixedCategory = cfg.fixedCategory;
+        const displayCat = document.getElementById('current-fixed-category');
+        if (displayCat) displayCat.textContent = cfg.label || cfg.fixedCategory;
+        const targetEl = document.getElementById('fixed-panel-target');
+        if (targetEl) targetEl.textContent = cfg.target || '';
+        fetchFixedData(); // 内部でupdateFixedFormVisibility()も呼ばれる
+    }
+
+    if (section === 'qa') fetchQAData();
+    if (section === 'terms') fetchPolicyPdf('terms');
+    if (section === 'privacy') fetchPolicyPdf('privacy');
+}
 
 let currentNewsCategory = 'お知らせ';
 let currentFixedCategory = 'ABOUT';
 let currentImagesBase64 = [];
+let currentPosterBase64 = null;
+
+// 現在HPに直書きされている「今すぐエントリー」リンク。entry_url未設定(=まだ一度も編集されていない)の場合、
+// フォームにはHPの表示と差異が出ないよう、この値を編集前情報として表示する。main.js側の既定値と揃えること。
+const DEFAULT_COMP_ENTRY_URL = 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/entry';
+const DEFAULT_WORK_ENTRY_URL = 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/works';
 
 let subdivisionNames = ["U-16", "O-16"];
 
@@ -199,10 +267,13 @@ function showNewsPreview() {
     const startTime = document.getElementById('news-start-time').value;
     const endTime = document.getElementById('news-end-time').value;
     const tentative = document.getElementById('news-is-tentative').checked;
-    const isOther = currentNewsCategory === '他所での開催';
-    
+
     let previewHTML = `<h2 style="color: var(--primary); margin-bottom: 10px;">${title}</h2>`;
-    
+
+    if (currentPosterBase64) {
+        previewHTML += `<img src="${currentPosterBase64}" style="width: 100%; max-width: 400px; display: block; margin: 0 auto 15px; border-radius: 12px;">`;
+    }
+
     if (tentative) {
         previewHTML += `<span style="background: #ff4b4b; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 15px; display: inline-block;">予定</span><br>`;
     }
@@ -228,44 +299,55 @@ function showFixedPreview() {
         const u16Content = document.getElementById('class-comp-content-u16').value || '';
         const u16Link = document.getElementById('class-comp-link-u16').value || '';
         const u16Img = currentClassCompImageU16;
-        
-        const o16Content = document.getElementById('class-comp-content-o16').value || '';
-        const o16Link = document.getElementById('class-comp-link-o16').value || '';
-        const o16Img = currentClassCompImageO16;
-        
+
         const imgHtmlU16 = u16Img ? `<img src="${u16Img}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
         const linkHtmlU16 = u16Link ? `<div style="margin-top: 12px;"><a href="${u16Link}" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
-        
-        const imgHtmlO16 = o16Img ? `<img src="${o16Img}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
-        const linkHtmlO16 = o16Link ? `<div style="margin-top: 12px;"><a href="${o16Link}" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
-        
+
         previewHTML = `
             <h2 style="color: var(--primary); margin-bottom: 20px;">部門紹介 (競技部門) プレビュー</h2>
-            <div style="display: flex; gap: 12px; flex-direction: row; flex-wrap: nowrap; color: var(--text-main);">
-                <div style="flex: 1; min-width: 0; background: rgba(26, 123, 196, 0.05); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.3;">
-                            <span style="display: flex; align-items: center; gap: 4px;">👦 U-16部門</span>
-                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-dim); display: block; margin-top: 2px;">(16歳以下対象)</span>
-                        </h4>
-                        <div style="white-space: pre-wrap; line-height: 1.5; font-size: 0.85rem;">${u16Content}</div>
-                        ${imgHtmlU16}
-                    </div>
-                    ${linkHtmlU16}
-                </div>
-                <div style="flex: 1; min-width: 0; background: rgba(241, 90, 34, 0.05); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <h4 style="color: var(--secondary); font-weight: 800; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.3;">
-                            <span style="display: flex; align-items: center; gap: 4px;">🧑 O-16部門</span>
-                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-dim); display: block; margin-top: 2px;">(高校生対象)</span>
-                        </h4>
-                        <div style="white-space: pre-wrap; line-height: 1.5; font-size: 0.85rem;">${o16Content}</div>
-                        ${imgHtmlO16}
-                    </div>
-                    ${linkHtmlO16}
-                </div>
+            <div style="max-width: 400px; background: rgba(26, 123, 196, 0.05); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; color: var(--text-main);">
+                <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.3;">
+                    <span style="display: flex; align-items: center; gap: 4px;">👦 U-16部門</span>
+                    <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-dim); display: block; margin-top: 2px;">(16歳以下対象)</span>
+                </h4>
+                <div style="white-space: pre-wrap; line-height: 1.5; font-size: 0.85rem;">${u16Content}</div>
+                ${imgHtmlU16}
+                ${linkHtmlU16}
             </div>
         `;
+    } else if (category === 'STAKEHOLDERS') {
+        const stakeholders = getStakeholdersFromForm();
+        previewHTML = `<h2 style="color: var(--primary); margin-bottom: 20px;">スポンサー プレビュー</h2>`;
+        if (stakeholders.length > 0) {
+            const order = ['主催', '共催', '協賛', '後援'];
+            const groups = {};
+            stakeholders.forEach(s => {
+                if (!groups[s.type]) groups[s.type] = [];
+                groups[s.type].push(s);
+            });
+            order.forEach(type => {
+                if (!groups[type] || groups[type].length === 0) return;
+                previewHTML += `<h4 style="color: var(--primary); margin: 15px 0 10px;">${type}</h4>`;
+                previewHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; margin-bottom: 10px;">`;
+                groups[type].forEach(s => {
+                    const frameHeight = s.size === 'large' ? '120px' : '60px';
+                    const logoHtml = s.logo
+                        ? `<img src="${s.logo}" style="max-width: 100%; max-height: 100%; object-fit: contain;">`
+                        : `<span style="color: var(--primary); font-weight: 800; font-size: 1.3rem;">${(s.name || '?').charAt(0)}</span>`;
+                    previewHTML += `
+                        <div style="text-align: center;">
+                            <div style="width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; background: white; border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px; box-sizing: border-box;">
+                                <div style="max-height: ${frameHeight}; display: flex; align-items: center; justify-content: center;">${logoHtml}</div>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-main); margin-top: 6px; font-weight: 600;">${s.name}${s.size === 'large' ? ' 🌟' : ''}</div>
+                        </div>
+                    `;
+                });
+                previewHTML += `</div>`;
+            });
+        } else {
+            previewHTML += `<p style="color: var(--text-dim);">（スポンサー未登録）</p>`;
+        }
     } else if (category === 'TOOLS') {
         const tools = getToolsFromForm();
         previewHTML = `<h2 style="color: var(--primary); margin-bottom: 20px;">ツール紹介 プレビュー</h2>`;
@@ -300,30 +382,8 @@ function showFixedPreview() {
 
 function initNewsLogic() {
     updateNewsFormVisibility(currentNewsCategory);
-    
-    const newsCategorySelect = document.getElementById('news-category-select');
-    if (newsCategorySelect) {
-        newsCategorySelect.addEventListener('change', (e) => {
-            const cat = e.target.value;
-            currentNewsCategory = cat;
-            const displayCat = document.getElementById('current-news-category');
-            if (displayCat) displayCat.textContent = cat;
-            document.getElementById('news-list-category').textContent = cat;
-            
-            updateNewsFormVisibility(cat);
 
-            document.getElementById('news-form').reset();
-            currentImagesBase64 = [];
-            document.getElementById('image-preview-container').innerHTML = '';
-            
-            document.getElementById('news-id').value = '';
-            document.getElementById('news-submit-btn').textContent = cat === '過去の開催情報' ? '過去の大会としてアーカイブする' : '投稿する';
-            document.getElementById('news-cancel-btn').style.display = 'none';
-            renderSubdivisions(["競技部門 (U-16)"]);
-            syncCompSubdivisions();
-            fetchNewsData();
-        });
-    }
+    // カテゴリの切り替えはサイドメニュー(switchAdminSection)が担うため、ここでは不要
 
     const migrationSelect = document.getElementById('news-migration-select');
     if (migrationSelect) {
@@ -372,7 +432,7 @@ function initNewsLogic() {
         const previewContainer = document.getElementById('image-preview-container');
         previewContainer.innerHTML = '';
         
-        const maxFiles = currentNewsCategory === '他所での開催' ? 5 : 1;
+        const maxFiles = currentNewsCategory === '過去の開催情報' ? 5 : 1;
         for (let i = 0; i < Math.min(files.length, maxFiles); i++) {
             const file = files[i];
             const reader = new FileReader();
@@ -388,11 +448,35 @@ function initNewsLogic() {
         }
     });
 
+    document.getElementById('news-poster-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        const previewContainer = document.getElementById('poster-preview-container');
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            alert('画像サイズは最大5MBまでです。');
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            currentPosterBase64 = event.target.result;
+            previewContainer.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = currentPosterBase64;
+            img.style.height = '100px';
+            img.style.borderRadius = '5px';
+            previewContainer.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+
     document.getElementById('news-form').addEventListener('submit', handleNewsSubmit);
     document.getElementById('news-cancel-btn').addEventListener('click', () => {
         document.getElementById('news-form').reset();
         currentImagesBase64 = [];
         document.getElementById('image-preview-container').innerHTML = '';
+        currentPosterBase64 = null;
+        document.getElementById('poster-preview-container').innerHTML = '';
         document.getElementById('comments-container').innerHTML = '';
         const previewBox = document.getElementById('migration-preview-box');
         if(previewBox) previewBox.style.display = 'none';
@@ -493,20 +577,21 @@ function showAdminPanel() {
             },
             {
                 category: 'CLASS_COMP',
-                title: '部門紹介 (競技部門)',
-                content: '対戦型プログラムを作成し、アルゴリズムや戦略を競い合う部門です。\n\n・U-16部門（16歳以下対象）：初心者から参加可能な対戦型プログラミングです。（初期状態で選択されます）\n・O-16部門（高校生対象）：より高度なアルゴリズムや多言語で競い合います。\n\n他者のコードと対戦させることで、より高度なロジックへの理解を深めます。'
+                title: '競技部門',
+                content: '対戦型プログラムを作成し、アルゴリズムや戦略を競い合う部門です。\n\nU-16部門（16歳以下対象）：初心者から参加可能な対戦型プログラミングです。\n\n他者のコードと対戦させることで、より高度なロジックへの理解を深めます。',
+                entry_url: DEFAULT_COMP_ENTRY_URL
             },
             {
                 category: 'CLASS_WORK',
-                title: '部門紹介 (作品部門)',
-                content: '自由なアイデアでWebサイト、アプリ、ゲームなどを制作する部門です。技術的な完成度だけでなく、独創性や社会への有用性が評価されます。'
+                title: '作品部門',
+                content: '自由なアイデアでWebサイト、アプリ、ゲームなどを制作する部門です。技術的な完成度だけでなく、独創性や社会への有用性が評価されます。',
+                entry_url: DEFAULT_WORK_ENTRY_URL
             },
             {
                 category: 'TOOLS',
                 title: 'ツール紹介',
                 content: JSON.stringify([
-                    { name: 'Scratch', url: 'https://scratch.mit.edu', description: 'ビジュアルプログラミング言語。ドラッグ＆ドロップで簡単にプログラムを作ることができます。' },
-                    { name: 'Unity', url: 'https://unity.com/ja', description: '本格的な3D/2Dゲーム開発エンジン。多くのインディーゲームや商業ゲームで使用されています。' }
+                    { name: 'Blockly Chaser', url: 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/', description: '競技部門で使用する対戦型プログラミングツールです。ブロックを組み合わせてプログラムを作成し、他のプレイヤーと対戦できます。' }
                 ])
             }
         ];
@@ -514,9 +599,7 @@ function showAdminPanel() {
     }
 
     loadAllSubdivisions().then(() => {
-        fetchQAData();
-        fetchNewsData(); 
-        fetchFixedData(); // Also load fixed content
+        switchAdminSection('dashboard'); // ログイン後、最初に表示するページ(HPのHOMEに相当)
     });
 }
 
@@ -526,35 +609,41 @@ let newsData = [];
 function updateNewsFormVisibility(category) {
     const isCurrent = category === '今期の開催情報';
     const isPast = category === '過去の開催情報';
-    const isOther = category === '他所での開催';
     const isNotice = category === 'お知らせ';
 
     const s = sel => document.querySelector(sel).style;
 
-    s('.field-prefecture').display = isOther ? 'block' : 'none';
-    s('.field-dates').display = (isCurrent || isOther) ? 'block' : 'none';
+    // 「他所での開催」カテゴリは廃止のため、開催都道府県は常時非表示
+    s('.field-prefecture').display = 'none';
+    // 「詳細を見る」ボタン用URL(overview_url)は今期の開催情報でも公開側が表示に使うため、ここで入力できるようにする
+    s('.field-overview-url').display = isCurrent ? 'block' : 'none';
+
+    s('.field-dates').display = isCurrent ? 'block' : 'none';
     s('#news-auto-migrate-text').display = isCurrent ? 'inline' : 'none';
-    s('.field-time-tentative').display = isOther ? 'none' : 'block';
-    
+    s('.field-time-tentative').display = 'block';
+
     s('.field-location').display = isCurrent ? 'block' : 'none';
     s('.field-map-url').display = isCurrent ? 'block' : 'none';
     s('.field-application').display = isCurrent ? 'block' : 'none';
-    
-    s('.field-participants-group').display = (isCurrent || isOther) ? 'flex' : 'none';
-    s('.field-participants').display = isOther ? 'block' : 'none';
-    
-    s('.field-divisions').display = (isCurrent || isOther) ? 'block' : 'none';
-    s('.field-image').display = (isCurrent || isPast || isOther) ? 'block' : 'none';
-    
+
+    // 参加人数は「過去の記録」として値を残すための項目なので、アーカイブ時のみ入力欄を出す
+    s('.field-participants-group').display = (isCurrent || isPast) ? 'flex' : 'none';
+    s('.field-target-age').display = isCurrent ? 'block' : 'none';
+    s('.field-participants').display = isPast ? 'block' : 'none';
+
+    s('.field-divisions').display = isCurrent ? 'block' : 'none';
+    s('.field-poster').display = isCurrent ? 'block' : 'none';
+    s('.field-image').display = (isCurrent || isPast) ? 'block' : 'none';
+
     const contentLabel = document.getElementById('news-content-label');
     const imageLabel = document.getElementById('news-image-label');
     const imageInput = document.getElementById('news-image-input');
-    
+
     if (isNotice && contentLabel) contentLabel.textContent = '本文';
     else if (contentLabel) contentLabel.textContent = '概要';
 
     if (imageLabel && imageInput) {
-        if (isOther || isPast) {
+        if (isPast) {
             imageLabel.innerHTML = '大会の様子（画像5枚まで） <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span>';
             imageInput.multiple = true;
         } else {
@@ -563,7 +652,6 @@ function updateNewsFormVisibility(category) {
         }
     }
 
-    s('.field-overview-url').display = isOther ? 'block' : 'none';
     s('.field-migration').display = isPast ? 'block' : 'none';
     s('.field-comments').display = isPast ? 'block' : 'none';
 
@@ -891,6 +979,17 @@ function openEditNews(id) {
         previewContainer.appendChild(img);
     });
 
+    currentPosterBase64 = item.poster_image || null;
+    const posterPreviewContainer = document.getElementById('poster-preview-container');
+    posterPreviewContainer.innerHTML = '';
+    if (currentPosterBase64) {
+        const posterImg = document.createElement('img');
+        posterImg.src = currentPosterBase64;
+        posterImg.style.height = '100px';
+        posterImg.style.borderRadius = '5px';
+        posterPreviewContainer.appendChild(posterImg);
+    }
+
     const commentsContainer = document.getElementById('comments-container');
     if (commentsContainer) {
         commentsContainer.innerHTML = '';
@@ -932,26 +1031,27 @@ async function handleNewsSubmit(e) {
     let content = document.getElementById('news-content').value;
     let category = currentNewsCategory;
 
-    const start_date = document.getElementById('news-start-date').value || null;
-    const start_time = document.getElementById('news-start-time').value || null;
-    const end_time = document.getElementById('news-end-time').value || null;
-    const is_tentative = document.getElementById('news-is-tentative').checked;
-    const location = document.getElementById('news-location').value || null;
-    const map_url = document.getElementById('news-map-url').value || null;
-    const application_url = document.getElementById('news-application-url').value || null;
-    const overview_url = document.getElementById('news-overview-url').value || null;
+    let start_date = document.getElementById('news-start-date').value || null;
+    let start_time = document.getElementById('news-start-time').value || null;
+    let end_time = document.getElementById('news-end-time').value || null;
+    let is_tentative = document.getElementById('news-is-tentative').checked;
+    let location = document.getElementById('news-location').value || null;
+    let map_url = document.getElementById('news-map-url').value || null;
+    let application_url = document.getElementById('news-application-url').value || null;
+    let overview_url = document.getElementById('news-overview-url').value || null;
     const prefecture = document.getElementById('news-prefecture').value || null;
-    const target_age = document.getElementById('news-target-age').value || null;
+    let target_age = document.getElementById('news-target-age').value || null;
     const participants = document.getElementById('news-participants').value || null;
-    
+
     const divCheckboxes = document.querySelectorAll('input[name="news-division"]:checked');
-    const divisions = Array.from(divCheckboxes).map(cb => cb.value);
+    let divisions = Array.from(divCheckboxes).map(cb => cb.value);
 
     const commentsTextareas = document.querySelectorAll('.news-participant-comment');
     let participant_comments = Array.from(commentsTextareas).map(ta => ta.value).filter(v => v.trim() !== '');
     if (participant_comments.length === 0) participant_comments = null;
 
     let images = currentImagesBase64.length > 0 ? currentImagesBase64 : null;
+    let poster_image = currentPosterBase64;
     let past_images = null;
     let is_past = false;
 
@@ -968,16 +1068,30 @@ async function handleNewsSubmit(e) {
             is_past = true;
             past_images = images;
             images = item.images; // retain existing main images
+            poster_image = item.poster_image; // retain existing poster image
+            // アーカイブ時はフォームの日時・場所・URL等の入力欄が隠れているため、
+            // 元の記事の値をそのまま引き継ぐ(そうしないと空欄で上書きされて消えてしまう)
+            start_date = item.start_date || null;
+            start_time = item.start_time || null;
+            end_time = item.end_time || null;
+            is_tentative = item.is_tentative || false;
+            location = item.location || null;
+            map_url = item.map_url || null;
+            application_url = item.application_url || null;
+            overview_url = item.overview_url || null;
+            target_age = item.target_age || null;
+            divisions = item.divisions || [];
+            // participants(参加人数)はアーカイブ時に新しく入力する値をそのまま使う
         }
     } else {
         past_images = null;
     }
 
     const method = id && currentNewsCategory !== '過去の開催情報' ? 'PUT' : (currentNewsCategory === '過去の開催情報' ? 'PUT' : 'POST');
-    const payload = { 
-        id, category, title, content, 
+    const payload = {
+        id, category, title, content,
         start_date, start_time, end_time, is_tentative, location, map_url, application_url, overview_url, prefecture,
-        target_age, participants, divisions, images, past_images, is_past, participant_comments
+        target_age, participants, divisions, images, poster_image, past_images, is_past, participant_comments
     };
 
     try {
@@ -992,13 +1106,15 @@ async function handleNewsSubmit(e) {
         document.getElementById('news-form').reset();
         currentImagesBase64 = [];
         document.getElementById('image-preview-container').innerHTML = '';
+        currentPosterBase64 = null;
+        document.getElementById('poster-preview-container').innerHTML = '';
         document.getElementById('comments-container').innerHTML = '';
         const previewBox = document.getElementById('migration-preview-box');
         if(previewBox) previewBox.style.display = 'none';
         document.getElementById('news-id').value = '';
         document.getElementById('news-submit-btn').textContent = '投稿する';
         document.getElementById('news-cancel-btn').style.display = 'none';
-        
+
         updateNewsFormVisibility(currentNewsCategory); // reset view logic
         renderSubdivisions(["競技部門 (U-16)"]);
         syncCompSubdivisions();
@@ -1020,12 +1136,14 @@ async function handleNewsSubmit(e) {
         document.getElementById('news-form').reset();
         currentImagesBase64 = [];
         document.getElementById('image-preview-container').innerHTML = '';
+        currentPosterBase64 = null;
+        document.getElementById('poster-preview-container').innerHTML = '';
         document.getElementById('news-id').value = '';
         document.getElementById('news-submit-btn').textContent = '投稿する';
         document.getElementById('news-cancel-btn').style.display = 'none';
         renderSubdivisions(["競技部門 (U-16)"]);
         syncCompSubdivisions();
-        
+
         await fetchNewsData();
     }
 }
@@ -1059,17 +1177,7 @@ async function deleteNews(id) {
 // ======================
 
 function initFixedLogic() {
-    const fixedCategorySelect = document.getElementById('fixed-category-select');
-    if (fixedCategorySelect) {
-        fixedCategorySelect.addEventListener('change', (e) => {
-            currentFixedCategory = e.target.value;
-            const text = e.target.options[e.target.selectedIndex].text;
-            const displayCat = document.getElementById('current-fixed-category');
-            if (displayCat) displayCat.textContent = text;
-            updateFixedFormVisibility();
-            fetchFixedData();
-        });
-    }
+    // カテゴリの切り替えはサイドメニュー(switchAdminSection)が担うため、ここでは不要
 
     const fixedImageInput = document.getElementById('fixed-image-input');
     if (fixedImageInput) {
@@ -1123,32 +1231,6 @@ function initFixedLogic() {
         });
     }
 
-    const imageInputO16 = document.getElementById('class-comp-image-input-o16');
-    if (imageInputO16) {
-        imageInputO16.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('画像サイズは最大5MBまでです。');
-                    e.target.value = '';
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    currentClassCompImageO16 = e.target.result;
-                    const previewContainer = document.getElementById('class-comp-image-preview-o16');
-                    previewContainer.innerHTML = '';
-                    const img = document.createElement('img');
-                    img.src = currentClassCompImageO16;
-                    img.style.height = '100px';
-                    img.style.borderRadius = '5px';
-                    previewContainer.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-
     document.getElementById('fixed-form').addEventListener('submit', handleFixedSubmit);
 
     const addSnsBtn = document.getElementById('add-sns-account-btn');
@@ -1164,7 +1246,6 @@ function initFixedLogic() {
 
 let currentFixedImageBase64 = null;
 let currentClassCompImageU16 = null;
-let currentClassCompImageO16 = null;
 
 function updateFixedFormVisibility() {
     const isAbout = currentFixedCategory === 'ABOUT';
@@ -1179,6 +1260,7 @@ function updateFixedFormVisibility() {
     
     document.querySelector('.field-fixed-image').style.display = isClassWork ? 'block' : 'none';
     document.querySelector('.field-fixed-link').style.display = isClassWork ? 'block' : 'none';
+    document.querySelector('.field-fixed-entry-url').style.display = isClassWork ? 'block' : 'none';
     
     document.querySelector('.field-fixed-sns').style.display = isSNS ? 'block' : 'none';
     document.querySelector('.field-fixed-stakeholders').style.display = isStakeholders ? 'block' : 'none';
@@ -1203,28 +1285,27 @@ async function fetchFixedData() {
     document.getElementById('fixed-title').value = '';
     document.getElementById('fixed-content').value = '';
     document.getElementById('fixed-link').value = '';
-    
+    // データが1件も無い(=セットアップ前)場合でも、HPの表示と差異が出ないよう既定URLを出しておく
+    document.getElementById('fixed-entry-url').value = DEFAULT_WORK_ENTRY_URL;
+    document.getElementById('class-comp-entry-url-u16').value = DEFAULT_COMP_ENTRY_URL;
+
     // Reset CLASS_COMP specific fields
-    const classCompFields = [
-        'class-comp-content-u16', 'class-comp-link-u16',
-        'class-comp-content-o16', 'class-comp-link-o16'
-    ];
+    const classCompFields = ['class-comp-content-u16', 'class-comp-link-u16'];
     classCompFields.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    const classCompPreviews = ['class-comp-image-preview-u16', 'class-comp-image-preview-o16'];
+    const classCompPreviews = ['class-comp-image-preview-u16'];
     classCompPreviews.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '';
     });
-    const classCompInputs = ['class-comp-image-input-u16', 'class-comp-image-input-o16'];
+    const classCompInputs = ['class-comp-image-input-u16'];
     classCompInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
     currentClassCompImageU16 = null;
-    currentClassCompImageO16 = null;
 
     // Clear SNS accounts list
     const snsList = document.getElementById('sns-accounts-list');
@@ -1254,7 +1335,9 @@ async function fetchFixedData() {
             document.getElementById('fixed-title').value = data.title || '';
             document.getElementById('fixed-content').value = data.content || '';
             document.getElementById('fixed-link').value = data.link || '';
-            
+            // 未編集(entry_url未設定)なら、現在HPに表示されている既定URLを編集前情報として出す(HPとの差異を防ぐ)
+            document.getElementById('fixed-entry-url').value = data.entry_url || DEFAULT_WORK_ENTRY_URL;
+
             if (data.image) {
                 currentFixedImageBase64 = data.image;
                 const img = document.createElement('img');
@@ -1263,7 +1346,7 @@ async function fetchFixedData() {
                 img.style.borderRadius = '5px';
                 document.getElementById('fixed-image-preview').appendChild(img);
             }
-            
+
             if (data.sns_data) {
                 let sns = data.sns_data;
                 if (typeof sns === 'string') sns = JSON.parse(sns);
@@ -1271,17 +1354,17 @@ async function fetchFixedData() {
                 const accounts = Array.isArray(sns) ? sns : legacySnsToArray(sns);
                 accounts.forEach(acc => addSnsAccountCard(acc));
             }
-            
-            // For CLASS_COMP, content holds JSON array of [{content, image, link}, ...]
+
+            // For CLASS_COMP, content holds JSON array of [{content, image, link}, ...] (U-16のみ使用。旧データにO-16分の2要素目が残っていても無視する)
             if (currentFixedCategory === 'CLASS_COMP' && data.content) {
                 try {
                     const parsed = JSON.parse(data.content);
-                    if (Array.isArray(parsed) && parsed.length >= 2) {
+                    if (Array.isArray(parsed) && parsed.length >= 1) {
                         const u16 = parsed[0];
-                        const o16 = parsed[1];
-                        
+
                         document.getElementById('class-comp-content-u16').value = u16.content || '';
                         document.getElementById('class-comp-link-u16').value = u16.link || '';
+                        document.getElementById('class-comp-entry-url-u16').value = data.entry_url || DEFAULT_COMP_ENTRY_URL;
                         if (u16.image) {
                             currentClassCompImageU16 = u16.image;
                             const img = document.createElement('img');
@@ -1289,17 +1372,6 @@ async function fetchFixedData() {
                             img.style.height = '100px';
                             img.style.borderRadius = '5px';
                             document.getElementById('class-comp-image-preview-u16').appendChild(img);
-                        }
-                        
-                        document.getElementById('class-comp-content-o16').value = o16.content || '';
-                        document.getElementById('class-comp-link-o16').value = o16.link || '';
-                        if (o16.image) {
-                            currentClassCompImageO16 = o16.image;
-                            const img = document.createElement('img');
-                            img.src = o16.image;
-                            img.style.height = '100px';
-                            img.style.borderRadius = '5px';
-                            document.getElementById('class-comp-image-preview-o16').appendChild(img);
                         }
                     }
                 } catch(e) {
@@ -1342,7 +1414,8 @@ async function fetchFixedData() {
                 document.getElementById('fixed-title').value = data.title || '';
                 document.getElementById('fixed-content').value = data.content || '';
                 document.getElementById('fixed-link').value = data.link || '';
-                
+                document.getElementById('fixed-entry-url').value = data.entry_url || DEFAULT_WORK_ENTRY_URL;
+
                 if (data.image) {
                     currentFixedImageBase64 = data.image;
                     const img = document.createElement('img');
@@ -1351,7 +1424,7 @@ async function fetchFixedData() {
                     img.style.borderRadius = '5px';
                     document.getElementById('fixed-image-preview').appendChild(img);
                 }
-                
+
                 if (data.sns_data) {
                     let sns = data.sns_data;
                     if (typeof sns === 'string') sns = JSON.parse(sns);
@@ -1359,16 +1432,16 @@ async function fetchFixedData() {
                     accounts.forEach(acc => addSnsAccountCard(acc));
                 }
 
-                // For CLASS_COMP fallback
+                // For CLASS_COMP fallback (U-16のみ)
                 if (currentFixedCategory === 'CLASS_COMP' && data.content) {
                     try {
                         const parsed = JSON.parse(data.content);
-                        if (Array.isArray(parsed) && parsed.length >= 2) {
+                        if (Array.isArray(parsed) && parsed.length >= 1) {
                             const u16 = parsed[0];
-                            const o16 = parsed[1];
-                            
+
                             document.getElementById('class-comp-content-u16').value = u16.content || '';
                             document.getElementById('class-comp-link-u16').value = u16.link || '';
+                            document.getElementById('class-comp-entry-url-u16').value = data.entry_url || DEFAULT_COMP_ENTRY_URL;
                             if (u16.image) {
                                 currentClassCompImageU16 = u16.image;
                                 const img = document.createElement('img');
@@ -1376,17 +1449,6 @@ async function fetchFixedData() {
                                 img.style.height = '100px';
                                 img.style.borderRadius = '5px';
                                 document.getElementById('class-comp-image-preview-u16').appendChild(img);
-                            }
-                            
-                            document.getElementById('class-comp-content-o16').value = o16.content || '';
-                            document.getElementById('class-comp-link-o16').value = o16.link || '';
-                            if (o16.image) {
-                                currentClassCompImageO16 = o16.image;
-                                const img = document.createElement('img');
-                                img.src = o16.image;
-                                img.style.height = '100px';
-                                img.style.borderRadius = '5px';
-                                document.getElementById('class-comp-image-preview-o16').appendChild(img);
                             }
                         }
                     } catch(e) {
@@ -1581,6 +1643,78 @@ function addStakeholderCard(type, data = {}) {
     urlDiv.appendChild(urlInput);
     wrapper.appendChild(urlDiv);
 
+    // Logo field (企業アイコン)
+    const logoDiv = document.createElement('div');
+    const logoLabel = document.createElement('label');
+    logoLabel.style.cssText = 'display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);';
+    logoLabel.innerHTML = '企業・団体ロゴ <span style="font-size: 0.75rem;">(任意・5MBまで)</span>';
+    logoDiv.appendChild(logoLabel);
+
+    const logoHiddenInput = document.createElement('input');
+    logoHiddenInput.type = 'hidden';
+    logoHiddenInput.className = 'stakeholder-field-logo';
+    logoHiddenInput.value = data.logo || '';
+    logoDiv.appendChild(logoHiddenInput);
+
+    const logoRow = document.createElement('div');
+    logoRow.style.cssText = 'display: flex; align-items: center; gap: 12px;';
+
+    const logoPreview = document.createElement('div');
+    logoPreview.className = 'stakeholder-logo-preview';
+    logoPreview.style.cssText = 'width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--primary-light); background: #fff; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;';
+    if (data.logo) {
+        const previewImg = document.createElement('img');
+        previewImg.src = data.logo;
+        previewImg.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
+        logoPreview.appendChild(previewImg);
+    }
+    logoRow.appendChild(logoPreview);
+
+    const logoFileInput = document.createElement('input');
+    logoFileInput.type = 'file';
+    logoFileInput.accept = 'image/*';
+    logoFileInput.style.cssText = 'flex: 1; font-size: 0.85rem;';
+    logoFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            alert('画像サイズは最大5MBまでです。');
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            logoHiddenInput.value = ev.target.result;
+            logoPreview.innerHTML = '';
+            const previewImg = document.createElement('img');
+            previewImg.src = ev.target.result;
+            previewImg.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
+            logoPreview.appendChild(previewImg);
+        };
+        reader.readAsDataURL(file);
+    });
+    logoRow.appendChild(logoFileInput);
+
+    logoDiv.appendChild(logoRow);
+    wrapper.appendChild(logoDiv);
+
+    // Logo size field (大=正方形 / 中=幅同じ・高さ半分)
+    const sizeDiv = document.createElement('div');
+    const sizeLabel = document.createElement('label');
+    sizeLabel.style.cssText = 'display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);';
+    sizeLabel.innerHTML = 'ロゴ表示サイズ <span style="font-size: 0.75rem;">(協賛金額等に応じて選択)</span>';
+    sizeDiv.appendChild(sizeLabel);
+    const sizeSelect = document.createElement('select');
+    sizeSelect.className = 'stakeholder-field-size';
+    sizeSelect.style.cssText = 'width: 100%; padding: 9px 12px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: #000000; font-size: 0.95rem; font-family: inherit; cursor: pointer;';
+    sizeSelect.innerHTML = `
+        <option value="medium">中(標準:正方形の半分の高さ)</option>
+        <option value="large">大(正方形で目立つ表示)</option>
+    `;
+    sizeSelect.value = data.size === 'large' ? 'large' : 'medium';
+    sizeDiv.appendChild(sizeSelect);
+    wrapper.appendChild(sizeDiv);
+
     card.appendChild(wrapper);
 
     // Delete button
@@ -1604,7 +1738,10 @@ function getStakeholdersFromForm() {
         cards.forEach(card => {
             const name = card.querySelector('.stakeholder-field-name').value.trim();
             const url = card.querySelector('.stakeholder-field-url').value.trim();
-            if (name) result.push({ type, name, url });
+            const logo = card.querySelector('.stakeholder-field-logo').value.trim();
+            const sizeEl = card.querySelector('.stakeholder-field-size');
+            const size = sizeEl ? sizeEl.value : 'medium';
+            if (name) result.push({ type, name, url, logo, size });
         });
     });
     return result;
@@ -1620,6 +1757,7 @@ async function handleFixedSubmit(e) {
     let link = null;
     let image = null;
     let content = null;
+    let entry_url = null;
 
     if (category === 'STAKEHOLDERS') {
         const stakeholders = getStakeholdersFromForm();
@@ -1641,26 +1779,26 @@ async function handleFixedSubmit(e) {
             link: document.getElementById('class-comp-link-u16').value.trim(),
             image: currentClassCompImageU16
         };
-        const o16 = {
-            content: document.getElementById('class-comp-content-o16').value.trim(),
-            link: document.getElementById('class-comp-link-o16').value.trim(),
-            image: currentClassCompImageO16
-        };
-        content = JSON.stringify([u16, o16]);
+        content = JSON.stringify([u16]);
+        entry_url = document.getElementById('class-comp-entry-url-u16').value.trim() || null;
     } else {
         title = document.getElementById('fixed-title').value;
         content = document.getElementById('fixed-content').value;
         link = document.getElementById('fixed-link').value;
         image = currentFixedImageBase64;
+        if (category === 'CLASS_WORK') {
+            entry_url = document.getElementById('fixed-entry-url').value.trim() || null;
+        }
     }
 
     const sns_data = getSnsAccountsFromForm();
 
-    const payload = { 
-        category, 
-        title, 
+    const payload = {
+        category,
+        title,
         content,
         link,
+        entry_url,
         image,
         sns_data
     };
@@ -1682,26 +1820,162 @@ async function handleFixedSubmit(e) {
         statusMsg.style.display = 'block';
 
         // Also persist to localStorage for local fallback
-        try {
-            let localFixed = JSON.parse(localStorage.getItem('mockFixedData') || '[]');
-            const idx = localFixed.findIndex(f => f.category === category);
-            const record = idx > -1 ? { ...localFixed[idx], ...payload } : { ...payload };
-            if (idx > -1) localFixed[idx] = record;
-            else localFixed.push(record);
-            localStorage.setItem('mockFixedData', JSON.stringify(localFixed));
-        } catch(e) { /* ignore localStorage errors */ }
-        
+        saveFixedContentToLocalStorage(category, payload);
+
         setTimeout(() => { statusMsg.style.display = 'none'; }, 3000);
         await fetchFixedData(); 
     } catch (error) {
         console.error(error);
-        // Show detailed error from server if available
-        let errorDetail = '保存に失敗しました。';
-        if (error.message && error.message !== 'Failed to save fixed content') {
-            errorDetail += ' (' + error.message + ')';
-        }
+
+        // --- Fallback for local demo ONLY (DBサーバーが無い/繋がらない環境向け) ---
+        // API保存が失敗した場合でも、ブラウザ内(localStorage)には必ず保存する。
+        // これが無いと入力内容がまるごと失われてしまう。
+        saveFixedContentToLocalStorage(category, payload);
+
+        let errorDetail = 'DBへの保存に失敗しましたが、ブラウザ内に一時保存しました。';
+        if (error.message) errorDetail += ' (' + error.message + ')';
         statusMsg.textContent = errorDetail;
         statusMsg.className = 'status-msg error';
         statusMsg.style.display = 'block';
+
+        await fetchFixedData();
+    }
+}
+
+// fixed_content_table相当のデータをブラウザのlocalStorageにもUpsertしておく(API保存の成否に関わらず呼び出す)
+function saveFixedContentToLocalStorage(category, payload) {
+    try {
+        let localFixed = JSON.parse(localStorage.getItem('mockFixedData') || '[]');
+        const idx = localFixed.findIndex(f => f.category === category);
+        const record = idx > -1 ? { ...localFixed[idx], ...payload } : { ...payload };
+        if (idx > -1) localFixed[idx] = record;
+        else localFixed.push(record);
+        localStorage.setItem('mockFixedData', JSON.stringify(localFixed));
+    } catch (e) {
+        console.error('Failed to save fixed content to localStorage', e);
+    }
+}
+
+// ======================
+// 大会規約・プライバシーポリシー (PDF)
+// ======================
+let currentTermsPdfBase64 = null;
+let currentPrivacyPdfBase64 = null;
+
+const POLICY_CONFIG = {
+    terms: { category: 'TERMS', title: '大会規約' },
+    privacy: { category: 'PRIVACY_POLICY', title: 'プライバシーポリシー' }
+};
+
+function initPolicyLogic() {
+    const termsInput = document.getElementById('terms-pdf-input');
+    if (termsInput) {
+        termsInput.addEventListener('change', (e) => handlePolicyPdfSelect(e, 'terms'));
+    }
+    const privacyInput = document.getElementById('privacy-pdf-input');
+    if (privacyInput) {
+        privacyInput.addEventListener('change', (e) => handlePolicyPdfSelect(e, 'privacy'));
+    }
+
+    const termsBtn = document.getElementById('terms-submit-btn');
+    if (termsBtn) termsBtn.addEventListener('click', () => submitPolicyPdf('terms'));
+
+    const privacyBtn = document.getElementById('privacy-submit-btn');
+    if (privacyBtn) privacyBtn.addEventListener('click', () => submitPolicyPdf('privacy'));
+}
+
+function handlePolicyPdfSelect(e, kind) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+        alert('PDFファイルを選択してください。');
+        e.target.value = '';
+        return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+        alert('ファイルサイズは最大4MBまでです。');
+        e.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        if (kind === 'terms') currentTermsPdfBase64 = ev.target.result;
+        else currentPrivacyPdfBase64 = ev.target.result;
+
+        const infoEl = document.getElementById(kind + '-current-info');
+        if (infoEl) {
+            infoEl.innerHTML = `<span style="color: var(--primary); font-weight: 600;">選択中のファイル: ${file.name}</span><br><span style="color: var(--text-dim); font-size: 0.8rem;">「アップロードして反映」を押すまで公開サイトには反映されません。</span>`;
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+async function fetchPolicyPdf(kind) {
+    const { category, title } = POLICY_CONFIG[kind];
+    const infoEl = document.getElementById(kind + '-current-info');
+    const inputEl = document.getElementById(kind + '-pdf-input');
+    if (inputEl) inputEl.value = '';
+
+    try {
+        const res = await fetch(`/api/fixed?category=${category}`);
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+
+        if (data && data.content) {
+            if (kind === 'terms') currentTermsPdfBase64 = data.content;
+            else currentPrivacyPdfBase64 = data.content;
+
+            if (infoEl) {
+                infoEl.innerHTML = `<a href="${data.content}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">アップロード済み(${data.title || title})</span>`;
+            }
+        } else {
+            if (kind === 'terms') currentTermsPdfBase64 = null;
+            else currentPrivacyPdfBase64 = null;
+            if (infoEl) {
+                infoEl.innerHTML = `<span style="color: var(--text-dim);">まだアップロードされていません。未アップロードの間、公開サイトは既存の docs フォルダ内のPDFを表示します。</span>`;
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        if (infoEl) infoEl.innerHTML = `<span style="color: var(--text-dim);">読み込みに失敗しました(DB未接続の可能性があります)。</span>`;
+    }
+}
+
+async function submitPolicyPdf(kind) {
+    const { category, title } = POLICY_CONFIG[kind];
+    const base64 = kind === 'terms' ? currentTermsPdfBase64 : currentPrivacyPdfBase64;
+    const statusEl = document.getElementById(kind + '-status');
+
+    const inputEl = document.getElementById(kind + '-pdf-input');
+    if (!base64 || !(inputEl && inputEl.value)) {
+        alert('アップロードするPDFファイルを選択してください。');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/fixed', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category, title, content: base64 })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || 'Failed to save');
+        }
+
+        if (statusEl) {
+            statusEl.textContent = '更新しました。公開サイトのリンク先に反映されます。';
+            statusEl.className = 'status-msg success';
+        }
+        setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 3000);
+        await fetchPolicyPdf(kind);
+    } catch (error) {
+        console.error(error);
+        if (statusEl) {
+            statusEl.textContent = '保存に失敗しました。' + (error.message ? '(' + error.message + ')' : '');
+            statusEl.className = 'status-msg error';
+        }
     }
 }

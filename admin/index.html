@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>U-16 SHIZUOKA | Q&A 管理ダッシュボード</title>
+    <title>U-16 SHIZUOKA | 管理画面</title>
     <link rel="icon" type="image/png" href="../logo.png">
     <link rel="stylesheet" href="../style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,9 +13,12 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700;900&display=swap"
         rel="stylesheet">
     <style>
-        .admin-container {
-            margin-top: 100px;
-            padding-bottom: 100px;
+        /* ============================================
+           管理画面はHP(公開サイト)のヘッダー/タブ/フッターとは
+           完全に独立した、専用のサイドメニュー型レイアウトにする
+           ============================================ */
+        html, body {
+            background: var(--bg-dark);
         }
 
         table {
@@ -137,6 +140,7 @@
         }
 
         .login-box {
+            position: relative;
             background: white;
             border: 1px solid var(--glass-border);
             padding: 48px;
@@ -145,6 +149,31 @@
             max-width: 400px;
             text-align: center;
             box-shadow: 0 12px 40px rgba(26, 123, 196, 0.15);
+        }
+
+        .login-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--glass-border);
+            background: var(--primary-pale);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            line-height: 1;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .login-close-btn:hover {
+            background: var(--primary);
+            color: white;
         }
 
         .login-box h2 {
@@ -160,70 +189,226 @@
             /* Hidden until logged in */
         }
 
-        .admin-tabs {
+        /* ---------- サイドメニュー ---------- */
+        .admin-shell {
             display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            border-bottom: 2px solid var(--primary-light);
-            padding-bottom: 12px;
+            align-items: flex-start;
+            min-height: 100vh;
         }
 
-        .admin-tab {
-            background: none;
-            border: 2px solid transparent;
+        .admin-sidebar {
+            position: sticky;
+            top: 0;
+            flex-shrink: 0;
+            width: 260px;
+            height: 100vh;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.7);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+        }
+
+        .admin-sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            padding: 0 8px 20px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .admin-sidebar-brand img {
+            height: 34px;
+            width: auto;
+        }
+
+        .admin-sidebar-brand span {
+            font-weight: 800;
+            font-size: 1.05rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .admin-sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .admin-sidebar-group-title {
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 1px;
             color: var(--text-dim);
-            font-size: 1rem;
-            cursor: pointer;
-            padding: 10px 22px;
-            border-radius: 50px;
-            transition: all 0.25s ease;
+            text-transform: uppercase;
+            padding: 18px 12px 6px;
+        }
+
+        .admin-sidebar-nav button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 0.92rem;
             font-weight: 600;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .admin-tab.active {
-            color: white;
-            background: var(--primary);
-            border-color: var(--primary);
-            box-shadow: 0 4px 12px rgba(26, 123, 196, 0.30);
-        }
-
-        .admin-tab:not(.active):hover {
+        .admin-sidebar-nav button:hover {
             background: var(--primary-pale);
             color: var(--primary);
-            border-color: var(--primary-light);
         }
 
-        .admin-pane {
+        .admin-sidebar-nav button.active {
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+        }
+
+        .admin-sidebar-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-top: 16px;
+            margin-top: 16px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .admin-sidebar-footer a {
+            display: block;
+            padding: 9px 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: var(--text-dim);
+            transition: all 0.2s ease;
+        }
+
+        .admin-sidebar-footer a:hover {
+            background: var(--primary-pale);
+            color: var(--primary);
+        }
+
+        .admin-sidebar-footer a#logout-btn {
+            color: var(--secondary);
+        }
+
+        /* ---------- コンテンツ側 ---------- */
+        .admin-content {
+            flex: 1;
+            min-width: 0;
+            padding: 40px;
+        }
+
+        .admin-panel {
             display: none;
         }
 
-        .admin-pane.active {
+        .admin-panel.active {
             display: block;
         }
 
-        .news-category-tabs {
-            display: flex;
-            gap: 10px;
+        .admin-panel-header {
+            margin-bottom: 24px;
         }
 
-        .news-tab {
-            background: white;
-            border: 1.5px solid var(--primary-light);
+        .admin-panel-header h2 {
+            font-size: 1.5rem;
+            color: var(--text-main);
+            font-weight: 800;
+        }
+
+        .admin-panel-header p {
             color: var(--text-dim);
-            padding: 6px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
             font-size: 0.9rem;
-            font-weight: 500;
+            margin-top: 4px;
         }
 
-        .news-tab.active {
-            background: var(--secondary);
-            color: white;
-            border-color: var(--secondary);
+        /* パネルごとの「どのページのどこに反映されるか」の説明バッジ */
+        .admin-panel-target {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: var(--primary-pale);
+            color: var(--primary);
+            font-size: 0.8rem;
             font-weight: 700;
-            box-shadow: 0 3px 10px rgba(241, 90, 34, 0.30);
+        }
+
+        /* ダッシュボード */
+        .admin-dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .admin-dashboard-card {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: white;
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .admin-dashboard-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(26, 123, 196, 0.12);
+        }
+
+        .admin-dashboard-card .card-tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .admin-dashboard-card h4 {
+            font-size: 1.05rem;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .admin-dashboard-card p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 900px) {
+            .admin-shell {
+                flex-direction: column;
+            }
+
+            .admin-sidebar {
+                position: static;
+                width: 100%;
+                height: auto;
+            }
+
+            .admin-content {
+                padding: 24px;
+            }
         }
     </style>
 </head>
@@ -232,6 +417,7 @@
     <!-- Login Screen -->
     <div id="login-overlay">
         <div class="login-box glass">
+            <a href="../index.html" class="login-close-btn" aria-label="閉じる">×</a>
             <h2>Admin Login</h2>
             <p style="color: var(--text-dim); margin-bottom: 20px; font-size: 0.9rem;">管理画面にアクセスするにはログインしてください。</p>
             <form id="login-form">
@@ -247,380 +433,463 @@
                     IDまたはパスワードが違います</div>
                 <button type="submit" class="btn-glow" style="width: 100%;">ログイン</button>
             </form>
-            <div style="margin-top: 20px;">
-                <a href="../qa/index.html" style="color: var(--text-dim); font-size: 0.8rem;">Q&Aページに戻る</a>
-            </div>
         </div>
     </div>
 
     <div id="admin-main-content">
-        <header id="main-header" style="background: rgba(240, 246, 255, 0.95); padding: 15px 0;">
-            <div class="container">
-                <div class="logo">
-                    <a href="../index.html"
-                        style="text-decoration: none; display: flex; align-items: center; gap:15px;">
-                        <img src="../logo.png" alt="Logo" style="height: 40px;">
-                        <span
-                            style="font-weight: 800; font-size: 1.2rem; background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">U-16
-                            ADMIN</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul style="align-items: center;">
-                        <li><a href="../qa/index.html">Q&Aページを見る</a></li>
-                        <li><a href="../index.html">ホームに戻る</a></li>
-                        <li><a href="#" id="setup-db-btn" style="color: var(--primary); margin-left: 20px; font-weight: 700;">データベース初期化</a></li>
-                        <li><a href="#" id="logout-btn" style="color: var(--secondary); margin-left: 20px; font-weight: 700;">ログアウト</a></li>
-                    </ul>
+        <div class="admin-shell">
+            <!-- サイドメニュー -->
+            <aside class="admin-sidebar">
+                <a href="../index.html" class="admin-sidebar-brand">
+                    <img src="../logo.png" alt="Logo">
+                    <span>U-16 ADMIN</span>
+                </a>
+
+                <nav class="admin-sidebar-nav" id="admin-sidebar-nav">
+                    <button type="button" data-section="dashboard">🏠 ダッシュボード</button>
+
+                    <div class="admin-sidebar-group-title">HOME ページ</div>
+                    <button type="button" data-section="news-notice">お知らせ</button>
+
+                    <div class="admin-sidebar-group-title">大会について ページ</div>
+                    <button type="button" data-section="fixed-about">ABOUT (概要文)</button>
+                    <button type="button" data-section="fixed-class-comp">競技部門</button>
+                    <button type="button" data-section="fixed-class-work">作品部門</button>
+                    <button type="button" data-section="fixed-tools">ツール紹介</button>
+
+                    <div class="admin-sidebar-group-title">開催情報 ページ</div>
+                    <button type="button" data-section="news-current">今期の開催情報</button>
+                    <button type="button" data-section="news-past">過去の開催情報</button>
+
+                    <div class="admin-sidebar-group-title">スポンサー ページ</div>
+                    <button type="button" data-section="fixed-stakeholders">スポンサー管理</button>
+
+                    <div class="admin-sidebar-group-title">Q&A ページ</div>
+                    <button type="button" data-section="qa">Q&A 管理</button>
+
+                    <div class="admin-sidebar-group-title">共有情報 (全ページ共通)</div>
+                    <button type="button" data-section="terms">大会規約 (PDF)</button>
+                    <button type="button" data-section="privacy">プライバシーポリシー (PDF)</button>
+                    <button type="button" data-section="fixed-sns">SNS</button>
                 </nav>
-            </div>
-        </header>
 
-        <main class="admin-container container">
+                <div class="admin-sidebar-footer">
+                    <a href="../index.html" target="_blank" rel="noopener">公開サイトを見る ↗</a>
+                    <a href="#" id="setup-db-btn">データベース初期化</a>
+                    <a href="#" id="logout-btn">ログアウト</a>
+                </div>
+            </aside>
 
-            <div class="admin-tabs">
-                <button class="admin-tab active" data-target="tab-qa">Q&A 管理</button>
-                <button class="admin-tab" data-target="tab-news">記事投稿 (動的)</button>
-                <button class="admin-tab" data-target="tab-fixed">固定箇所編集</button>
-            </div>
+            <!-- コンテンツ -->
+            <main class="admin-content">
 
-            <div id="tab-qa" class="admin-pane active">
-                <div class="glass" style="margin-bottom: 30px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3>登録済みのQ&A一覧</h3>
-                        <button id="add-new-btn" class="btn-glow">新規追加</button>
+                <!-- ダッシュボード (ログイン後、最初に表示されるページ) -->
+                <div id="panel-dashboard" class="admin-panel active">
+                    <div class="admin-panel-header">
+                        <h2>ようこそ、U-16 SHIZUOKA 管理画面へ</h2>
+                        <p>編集したい項目を選んでください。左のメニュー、または下のカードから移動できます。</p>
                     </div>
-                    <div id="status-container"></div>
-
-                    <div style="overflow-x: auto;">
-                        <table id="qa-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 50px;">ID</th>
-                                    <th style="width: 150px;">ジャンル</th>
-                                    <th>質問</th>
-                                    <th style="width: 120px;">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="qa-tbody">
-                                <tr>
-                                    <td colspan="4" style="text-align: center; color: var(--text-dim);">読み込み中...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="admin-dashboard-grid">
+                        <button type="button" class="admin-dashboard-card" onclick="switchAdminSection('news-notice')">
+                            <span class="card-tag">HOME ページ</span>
+                            <h4>お知らせ</h4>
+                            <p>ホームページの「お知らせ・最新情報」に表示される記事を投稿・編集します。</p>
+                        </button>
+                        <button type="button" class="admin-dashboard-card" onclick="switchAdminSection('fixed-about')">
+                            <span class="card-tag">大会について ページ</span>
+                            <h4>ABOUT・部門紹介・ツール紹介</h4>
+                            <p>大会の概要文、競技/作品部門の紹介、ツール紹介セクションを編集します。</p>
+                        </button>
+                        <button type="button" class="admin-dashboard-card" onclick="switchAdminSection('news-current')">
+                            <span class="card-tag">開催情報 ページ</span>
+                            <h4>今期・過去の開催情報</h4>
+                            <p>開催中の大会情報の投稿や、終了した大会の過去アーカイブへの移行を行います。</p>
+                        </button>
+                        <button type="button" class="admin-dashboard-card" onclick="switchAdminSection('fixed-stakeholders')">
+                            <span class="card-tag">スポンサー ページ</span>
+                            <h4>スポンサー管理</h4>
+                            <p>主催・共催・協賛・後援の団体・企業とロゴを登録します。</p>
+                        </button>
+                        <button type="button" class="admin-dashboard-card" onclick="switchAdminSection('qa')">
+                            <span class="card-tag">Q&A ページ</span>
+                            <h4>Q&A管理</h4>
+                            <p>よくあるご質問ページに表示される質問と回答を管理します。</p>
+                        </button>
+                        <button type="button" class="admin-dashboard-card" onclick="switchAdminSection('terms')">
+                            <span class="card-tag">共有情報 (全ページ共通)</span>
+                            <h4>大会規約・プライバシーポリシー</h4>
+                            <p>全ページのフッターに表示されるPDFリンクをアップロード・差し替えします。</p>
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <div id="tab-news" class="admin-pane">
-                <div class="glass" style="margin-bottom: 30px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3>記事投稿・管理</h3>
-                        <div>
-                            <select id="news-category-select" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000000; cursor: pointer; font-weight: 600;">
-                                <option value="お知らせ">お知らせ</option>
-                                <option value="今期の開催情報">今期の開催情報</option>
-                                <option value="過去の開催情報">過去の開催情報 (今期からの移行管理)</option>
-                                <option value="他所での開催">他所での開催</option>
-                            </select>
+                <!-- Q&A 管理 -->
+                <div id="panel-qa" class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h2>Q&A 管理</h2>
+                        <p>よくあるご質問ページに表示されるQ&Aを管理します。</p>
+                        <span class="admin-panel-target">Q&A ページに表示されます</span>
+                    </div>
+                    <div class="glass" style="margin-bottom: 30px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>登録済みのQ&A一覧</h3>
+                            <button id="add-new-btn" class="btn-glow">新規追加</button>
+                        </div>
+                        <div id="status-container"></div>
+
+                        <div style="overflow-x: auto;">
+                            <table id="qa-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">ID</th>
+                                        <th style="width: 150px;">ジャンル</th>
+                                        <th>質問</th>
+                                        <th style="width: 120px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="qa-tbody">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-dim);">読み込み中...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    
-                    <p id="news-form-title" style="color: var(--primary); font-weight: 600; margin-bottom: 20px; font-size: 1.1rem;">📝 <span id="current-news-category">お知らせ</span> へ投稿します</p>
-                    <p id="past-notice-msg" style="color: var(--text-dim); margin-bottom: 20px; display: none;">※ 今期開催された大会を選び、「大会の様子」の画像を追加することで過去の記録としてアーカイブできます。</p>
-                    
-                    <form id="news-form">
-                        <input type="hidden" id="news-id" name="news-id">
-                        <div class="form-group field-migration" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label for="news-migration-select" style="display: block; margin-bottom: 5px;">アーカイブする大会を選択</label>
-                            <select id="news-migration-select">
-                                <option value="">大会を選択してください...</option>
-                            </select>
-                            <div id="migration-preview-box" style="display: none; padding: 15px; background: var(--primary-pale); border: 1px dashed var(--primary-light); border-radius: 8px; margin-top: 15px; font-size: 0.95rem; line-height: 1.5; color: var(--text-main);"> 
-                                <!-- Read-only preview injected here -->
-                            </div>
-                        </div>
+                </div>
 
-                        <div class="form-group field-common" style="margin-bottom: 15px; text-align: left;">
-                            <label for="news-title" style="display: block; margin-bottom: 5px;">タイトル</label>
-                            <input type="text" id="news-title" placeholder="記事のタイトルを入力" required>
-                        </div>
-                        
-                        <div class="form-group field-prefecture" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label for="news-prefecture" style="display: block; margin-bottom: 5px;">開催都道府県</label>
-                            <input type="text" id="news-prefecture" placeholder="例：静岡県">
-                        </div>
+                <!-- 記事投稿 (お知らせ / 今期の開催情報 / 過去の開催情報 共通) -->
+                <div id="panel-news" class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h2 id="news-panel-title">記事投稿</h2>
+                        <p id="news-panel-desc">選択中のカテゴリに記事を投稿・編集します。</p>
+                        <span id="news-panel-target" class="admin-panel-target"></span>
+                    </div>
+                    <div class="glass" style="margin-bottom: 30px;">
+                        <p id="news-form-title" style="color: var(--primary); font-weight: 600; margin-bottom: 20px; font-size: 1.1rem;">📝 <span id="current-news-category">お知らせ</span> へ投稿します</p>
+                        <p id="past-notice-msg" style="color: var(--text-dim); margin-bottom: 20px; display: none;">※ 今期開催された大会を選び、「大会の様子」の画像を追加することで過去の記録としてアーカイブできます。</p>
 
-                        <div class="form-group field-dates" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label style="display: block; margin-bottom: 5px;">開催日 <span id="news-auto-migrate-text" style="font-size: 0.8rem; color: var(--text-dim);">（当日の日付を過ぎると自動で過去の記事へ移動します）</span></label>
-                            <div style="display: flex; gap: 10px; align-items: center; color: var(--text-main); margin-bottom: 10px;">
-                                <input type="date" id="news-start-date" style="padding: 10px; background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem;">
-                            </div>
-                            <div class="field-time-tentative">
-                                <label style="display: block; margin-bottom: 5px; margin-top: 10px;">時間</label>
-                                <div style="display: flex; gap: 10px; align-items: center; color: var(--text-main); margin-bottom: 15px;">
-                                    <input type="time" id="news-start-time" style="padding: 10px; background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem;">
-                                    ～ 
-                                    <input type="time" id="news-end-time" style="padding: 10px; background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem;">
+                        <form id="news-form">
+                            <input type="hidden" id="news-id" name="news-id">
+                            <div class="form-group field-migration" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label for="news-migration-select" style="display: block; margin-bottom: 5px;">アーカイブする大会を選択</label>
+                                <select id="news-migration-select">
+                                    <option value="">大会を選択してください...</option>
+                                </select>
+                                <div id="migration-preview-box" style="display: none; padding: 15px; background: var(--primary-pale); border: 1px dashed var(--primary-light); border-radius: 8px; margin-top: 15px; font-size: 0.95rem; line-height: 1.5; color: var(--text-main);">
+                                    <!-- Read-only preview injected here -->
                                 </div>
-                                <label style="display: flex; align-items: center; gap: 8px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 0.95rem;">
-                                    <input type="checkbox" id="news-is-tentative" value="true" style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 予定（日時や場所が未確定・予定の段階の場合にチェック）
-                                </label>
                             </div>
-                        </div>
 
-                        <div class="form-group field-location" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label for="news-location" style="display: block; margin-bottom: 5px;">開催地・施設名</label>
-                            <input type="text" id="news-location" placeholder="例：静岡大学 浜松キャンパス">
-                        </div>
-
-                        <div class="form-group field-map-url" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label for="news-map-url" style="display: block; margin-bottom: 5px;">URL (Google Mapのハイパーリンク)</label>
-                            <input type="url" id="news-map-url" placeholder="https://goo.gl/maps/...">
-                        </div>
-
-                        <div class="form-group field-application" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label for="news-application-url" style="display: block; margin-bottom: 5px;">大会申し込みURL (※過去記事には表示されません)</label>
-                            <input type="url" id="news-application-url" placeholder="https://forms.gle/...">
-                        </div>
-
-                        <div class="form-group field-overview-url" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label for="news-overview-url" style="display: block; margin-bottom: 5px;">大会概要のURL</label>
-                            <input type="url" id="news-overview-url" placeholder="https://example.com/overview">
-                        </div>
-
-                        <div class="form-group field-content" style="margin-bottom: 15px; text-align: left;">
-                            <label id="news-content-label" for="news-content" style="display: block; margin-bottom: 5px;">本文 / 概要</label>
-                            <textarea id="news-content" rows="6" placeholder="記事の本文や概要を入力" required></textarea>
-                        </div>
-                        
-                        <div class="form-group field-participants-group" style="display: none; gap: 15px; margin-bottom: 15px; text-align: left;">
-                            <div style="flex: 1;" class="field-target-age">
-                                <label for="news-target-age" style="display: block; margin-bottom: 5px;">対象年齢・参加年齢</label>
-                                <input type="text" id="news-target-age" placeholder="例：小学4年生〜中学3年生">
+                            <div class="form-group field-common" style="margin-bottom: 15px; text-align: left;">
+                                <label for="news-title" style="display: block; margin-bottom: 5px;">タイトル</label>
+                                <input type="text" id="news-title" placeholder="記事のタイトルを入力" required>
                             </div>
-                            <div style="flex: 1; display: none;" class="field-participants">
-                                <label for="news-participants" style="display: block; margin-bottom: 5px;">参加人数</label>
-                                <input type="text" id="news-participants" placeholder="例：30名程度">
-                            </div>
-                        </div>
 
-                        <div class="form-group field-divisions" style="margin-bottom: 20px; text-align: left; display: none;">
-                            <label style="display: block; margin-bottom: 10px; color: var(--primary);">部門</label>
-                            <div style="display: flex; flex-direction: column; gap: 15px; background: white; padding: 20px; border: 2px solid var(--primary-light); border-radius: 12px; box-shadow: 0 2px 8px rgba(26, 123, 196, 0.07);">
-                                <div style="display: flex; flex-direction: column; gap: 8px;">
-                                    <label style="display: flex; align-items: center; gap: 10px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 1.05rem; font-weight: 700;">
-                                        <input type="checkbox" id="news-division-comp" name="news-division" value="競技部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 競技部門
+                            <div class="form-group field-prefecture" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label for="news-prefecture" style="display: block; margin-bottom: 5px;">開催都道府県</label>
+                                <input type="text" id="news-prefecture" placeholder="例：静岡県">
+                            </div>
+
+                            <div class="form-group field-dates" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label style="display: block; margin-bottom: 5px;">開催日 <span id="news-auto-migrate-text" style="font-size: 0.8rem; color: var(--text-dim);">（当日の日付を過ぎると自動で過去の記事へ移動します）</span></label>
+                                <div style="display: flex; gap: 10px; align-items: center; color: var(--text-main); margin-bottom: 10px;">
+                                    <input type="date" id="news-start-date" style="padding: 10px; background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem;">
+                                </div>
+                                <div class="field-time-tentative">
+                                    <label style="display: block; margin-bottom: 5px; margin-top: 10px;">時間</label>
+                                    <div style="display: flex; gap: 10px; align-items: center; color: var(--text-main); margin-bottom: 15px;">
+                                        <input type="time" id="news-start-time" style="padding: 10px; background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem;">
+                                        ～
+                                        <input type="time" id="news-end-time" style="padding: 10px; background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem;">
+                                    </div>
+                                    <label style="display: flex; align-items: center; gap: 8px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 0.95rem;">
+                                        <input type="checkbox" id="news-is-tentative" value="true" style="width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 予定（日時や場所が未確定・予定の段階の場合にチェック）
                                     </label>
-                                    <div id="subdivisions-wrapper" style="display: flex; flex-direction: column; gap: 10px; margin-left: 32px; padding-top: 5px; transition: all 0.3s ease;">
-                                        <div id="subdivisions-container" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-                                            <!-- ここに動的にチェックボックスが追加されます -->
+                                </div>
+                            </div>
+
+                            <div class="form-group field-location" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label for="news-location" style="display: block; margin-bottom: 5px;">開催地・施設名</label>
+                                <input type="text" id="news-location" placeholder="例：静岡大学 浜松キャンパス">
+                            </div>
+
+                            <div class="form-group field-map-url" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label for="news-map-url" style="display: block; margin-bottom: 5px;">URL (Google Mapのハイパーリンク)</label>
+                                <input type="url" id="news-map-url" placeholder="https://goo.gl/maps/...">
+                            </div>
+
+                            <div class="form-group field-application" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label for="news-application-url" style="display: block; margin-bottom: 5px;">大会申し込みURL (※過去記事には表示されません)</label>
+                                <input type="url" id="news-application-url" placeholder="https://forms.gle/...">
+                            </div>
+
+                            <div class="form-group field-overview-url" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label for="news-overview-url" style="display: block; margin-bottom: 5px;">大会概要のURL</label>
+                                <input type="url" id="news-overview-url" placeholder="https://example.com/overview">
+                            </div>
+
+                            <div class="form-group field-content" style="margin-bottom: 15px; text-align: left;">
+                                <label id="news-content-label" for="news-content" style="display: block; margin-bottom: 5px;">本文 / 概要</label>
+                                <textarea id="news-content" rows="6" placeholder="記事の本文や概要を入力" required></textarea>
+                            </div>
+
+                            <div class="form-group field-participants-group" style="display: none; gap: 15px; margin-bottom: 15px; text-align: left;">
+                                <div style="flex: 1;" class="field-target-age">
+                                    <label for="news-target-age" style="display: block; margin-bottom: 5px;">対象年齢・参加年齢</label>
+                                    <input type="text" id="news-target-age" placeholder="例：小学4年生〜中学3年生">
+                                </div>
+                                <div style="flex: 1; display: none;" class="field-participants">
+                                    <label for="news-participants" style="display: block; margin-bottom: 5px;">参加人数</label>
+                                    <input type="text" id="news-participants" placeholder="例：30名程度">
+                                </div>
+                            </div>
+
+                            <div class="form-group field-divisions" style="margin-bottom: 20px; text-align: left; display: none;">
+                                <label style="display: block; margin-bottom: 10px; color: var(--primary);">部門</label>
+                                <div style="display: flex; flex-direction: column; gap: 15px; background: white; padding: 20px; border: 2px solid var(--primary-light); border-radius: 12px; box-shadow: 0 2px 8px rgba(26, 123, 196, 0.07);">
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        <label style="display: flex; align-items: center; gap: 10px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 1.05rem; font-weight: 700;">
+                                            <input type="checkbox" id="news-division-comp" name="news-division" value="競技部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 競技部門
+                                        </label>
+                                        <div id="subdivisions-wrapper" style="display: flex; flex-direction: column; gap: 10px; margin-left: 32px; padding-top: 5px; transition: all 0.3s ease;">
+                                            <div id="subdivisions-container" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+                                                <!-- ここに動的にチェックボックスが追加されます -->
+                                            </div>
+                                            <div>
+                                                <button type="button" id="add-subdivision-btn" class="btn-outline" style="padding: 6px 14px; font-size: 0.85rem; width: fit-content; display: inline-block;">＋ 部門を追加</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr style="border: 0; border-top: 1px solid var(--primary-light); margin: 5px 0;">
+
+                                    <label style="display: flex; align-items: center; gap: 10px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 1.05rem; font-weight: 700;">
+                                        <input type="checkbox" id="news-division-work" name="news-division" value="作品部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 作品部門
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group field-comments" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label style="display: block; margin-bottom: 5px;">参加者からのコメント <span style="font-size: 0.8rem; color: var(--text-dim);">※複数追加可能</span></label>
+                                <div id="comments-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
+                                    <!-- Comments dynamically pushed here -->
+                                </div>
+                                <button type="button" id="add-comment-btn" class="btn-outline" style="padding: 8px 15px; font-size: 0.9rem;">＋ コメントを追加する</button>
+                            </div>
+
+                            <div class="form-group field-poster" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label style="display: block; margin-bottom: 5px;">ポスター画像 <span style="font-size: 0.8rem; color: var(--text-dim);">※チラシ・告知ポスター等を1枚。最大5MB程度まで</span></label>
+                                <input type="file" id="news-poster-input" accept="image/*">
+                                <div id="poster-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+                            </div>
+
+                            <div class="form-group field-image" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label id="news-image-label" style="display: block; margin-bottom: 5px;">画像投稿 <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
+                                <input type="file" id="news-image-input" accept="image/*">
+                                <div id="image-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+                            </div>
+
+                            <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                                <button type="button" id="news-preview-btn" class="btn-outline" style="margin-right: 10px;">プレビュー</button>
+                                <button type="button" id="news-cancel-btn" class="btn-outline" style="display: none; margin-right: 10px;">キャンセル</button>
+                                <button type="submit" class="btn-glow" id="news-submit-btn">投稿する</button>
+                            </div>
+                        </form>
+
+                        <h4 style="margin-top: 40px; margin-bottom: 15px;">投稿済みの記事 (<span id="news-list-category">お知らせ</span>)</h4>
+                        <div style="overflow-x: auto;">
+                            <table id="news-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">ID</th>
+                                        <th>タイトル</th>
+                                        <th style="width: 180px;">投稿日時</th>
+                                        <th style="width: 120px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="news-tbody">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-dim);">読み込み中...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 固定コンテンツ (ABOUT / 部門紹介 / ツール紹介 / SNS / スポンサー 共通) -->
+                <div id="panel-fixed" class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h2 id="current-fixed-category">ABOUT (大会について)</h2>
+                        <p id="fixed-panel-desc">公開サイトの該当セクションに反映されます。</p>
+                        <span id="fixed-panel-target" class="admin-panel-target"></span>
+                    </div>
+                    <div class="glass" style="margin-bottom: 30px;">
+                        <form id="fixed-form">
+                            <input type="hidden" id="fixed-id" name="fixed-id">
+                            <div class="form-group field-fixed-title" style="margin-bottom: 15px; text-align: left;">
+                                <label for="fixed-title" style="display: block; margin-bottom: 5px;">見出し / タイトル</label>
+                                <input type="text" id="fixed-title" placeholder="見出しを入力">
+                            </div>
+                            <div class="form-group field-fixed-content" style="margin-bottom: 15px; text-align: left;">
+                                <label for="fixed-content" id="fixed-content-label" style="display: block; margin-bottom: 5px;">本文 / 詳細 (改行・HTMLが反映されます)</label>
+                                <textarea id="fixed-content" rows="10" placeholder="本文を入力"></textarea>
+                            </div>
+
+                            <div class="form-group field-fixed-image" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label style="display: block; margin-bottom: 5px;">画像 (1枚) <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
+                                <input type="file" id="fixed-image-input" accept="image/*">
+                                <div id="fixed-image-preview" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+                            </div>
+
+                            <div class="form-group field-fixed-entry-url" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label for="fixed-entry-url" style="display: block; margin-bottom: 5px; color: var(--primary); font-weight: 700;">🔗 「今すぐエントリー」ボタン＆QRコードのリンク先URL</label>
+                                <input type="url" id="fixed-entry-url" placeholder="https://example.com/entry">
+                                <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">ページ上部の「今すぐエントリー」ボタンとQRコードの両方に反映されます。</p>
+                            </div>
+
+                            <div class="form-group field-fixed-link" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <label for="fixed-link" style="display: block; margin-bottom: 5px;">関連リンクURL</label>
+                                <input type="url" id="fixed-link" placeholder="https://example.com/...">
+                            </div>
+
+                            <div class="form-group field-fixed-class-comp" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <p style="color: var(--text-dim); font-size: 0.95rem; margin-bottom: 20px;">📋 競技部門(U-16部門)の紹介記事を編集します。公開サイトではU-16部門のみを掲載しています。</p>
+
+                                <!-- U-16部門 -->
+                                <div style="background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(26,123,196,0.06);">
+                                    <h4 style="color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid var(--primary-light); padding-bottom: 5px; font-size: 1.1rem; font-weight: 700;">👦 U-16部門 (16歳以下対象)</h4>
+                                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                                        <div style="background: var(--primary-pale); padding: 12px; border-radius: 8px;">
+                                            <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--primary); font-weight: 700;">🔗 「今すぐエントリー」ボタン＆QRコードのリンク先URL</label>
+                                            <input type="url" id="class-comp-entry-url-u16" placeholder="https://example.com/entry" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
+                                            <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">ページ上部の「今すぐエントリー」ボタンとQRコードの両方に反映されます。</p>
                                         </div>
                                         <div>
-                                            <button type="button" id="add-subdivision-btn" class="btn-outline" style="padding: 6px 14px; font-size: 0.85rem; width: fit-content; display: inline-block;">＋ 部門を追加</button>
+                                            <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">詳細 (改行・HTMLが反映されます)</label>
+                                            <textarea id="class-comp-content-u16" rows="4" placeholder="U-16部門の詳細説明を入力" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;"></textarea>
+                                        </div>
+                                        <div>
+                                            <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">画像 (1枚) ※最大5MB程度まで</label>
+                                            <input type="file" id="class-comp-image-input-u16" accept="image/*" style="width: 100%; padding: 5px; border: 1px solid var(--primary-light); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); background: #ffffff;">
+                                            <div id="class-comp-image-preview-u16" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+                                        </div>
+                                        <div>
+                                            <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">関連リンクURL (「もっと詳しく」ボタン・任意)</label>
+                                            <input type="url" id="class-comp-link-u16" placeholder="https://example.com/u16-details" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <hr style="border: 0; border-top: 1px solid var(--primary-light); margin: 5px 0;">
-                                
-                                <label style="display: flex; align-items: center; gap: 10px; color: var(--text-main); margin: 0; cursor: pointer; font-size: 1.05rem; font-weight: 700;">
-                                    <input type="checkbox" id="news-division-work" name="news-division" value="作品部門" style="width: 22px; height: 22px; margin: 0; cursor: pointer; accent-color: var(--primary);"> 作品部門
-                                </label>
                             </div>
-                        </div>
 
-                        <div class="form-group field-comments" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label style="display: block; margin-bottom: 5px;">参加者からのコメント <span style="font-size: 0.8rem; color: var(--text-dim);">※複数追加可能</span></label>
-                            <div id="comments-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
-                                <!-- Comments dynamically pushed here -->
+                            <div class="form-group field-fixed-stakeholders" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px;">📋 主催・共催・協賛・後援の団体・企業を登録します。団体名は必須、URL・ロゴ画像は任意です。ここで登録した内容は「スポンサー」ページに表示されます。<br>ロゴ表示サイズは「大(正方形)」「中(大の半分の高さ・幅は同じ)」から選択でき、協賛金額等に応じて目立たせたい企業は「大」を選んでください。</p>
+
+                                <!-- 主催 -->
+                                <div style="margin-bottom: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <label style="font-weight: 700; color: var(--primary); font-size: 1rem;">🏆 主催</label>
+                                        <button type="button" class="btn-outline" onclick="addStakeholderCard('主催')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                    </div>
+                                    <div id="stakeholder-list-主催" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                </div>
+
+                                <!-- 共催 -->
+                                <div style="margin-bottom: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <label style="font-weight: 700; color: var(--secondary); font-size: 1rem;">🤝 共催</label>
+                                        <button type="button" class="btn-outline" onclick="addStakeholderCard('共催')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                    </div>
+                                    <div id="stakeholder-list-共催" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                </div>
+
+                                <!-- 協賛 -->
+                                <div style="margin-bottom: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <label style="font-weight: 700; color: #a8ff78; font-size: 1rem;">💰 協賛</label>
+                                        <button type="button" class="btn-outline" onclick="addStakeholderCard('協賛')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                    </div>
+                                    <div id="stakeholder-list-協賛" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                </div>
+
+                                <!-- 後援 -->
+                                <div style="margin-bottom: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <label style="font-weight: 700; color: #78d8ff; font-size: 1rem;">⭐ 後援</label>
+                                        <button type="button" class="btn-outline" onclick="addStakeholderCard('後援')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                    </div>
+                                    <div id="stakeholder-list-後援" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                </div>
                             </div>
-                            <button type="button" id="add-comment-btn" class="btn-outline" style="padding: 8px 15px; font-size: 0.9rem;">＋ コメントを追加する</button>
-                        </div>
-
-                        <div class="form-group field-image" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label id="news-image-label" style="display: block; margin-bottom: 5px;">画像投稿 <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
-                            <input type="file" id="news-image-input" accept="image/*">
-                            <div id="image-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
-                        </div>
-
-                        <div class="form-actions" style="margin-top: 20px; text-align: right;">
-                            <button type="button" id="news-preview-btn" class="btn-outline" style="margin-right: 10px;">プレビュー</button>
-                            <button type="button" id="news-cancel-btn" class="btn-outline" style="display: none; margin-right: 10px;">キャンセル</button>
-                            <button type="submit" class="btn-glow" id="news-submit-btn">投稿する</button>
-                        </div>
-                    </form>
-
-                    <h4 style="margin-top: 40px; margin-bottom: 15px;">投稿済みの記事 (<span id="news-list-category">お知らせ</span>)</h4>
-                    <div style="overflow-x: auto;">
-                        <table id="news-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 50px;">ID</th>
-                                    <th>タイトル</th>
-                                    <th style="width: 180px;">投稿日時</th>
-                                    <th style="width: 120px;">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="news-tbody">
-                                <tr>
-                                    <td colspan="4" style="text-align: center; color: var(--text-dim);">読み込み中...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                            <div class="form-group field-fixed-sns" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 15px;">📌 SNSサービスを自由に追加できます。サービス名、ユーザーID（@含む）、リンクURL、コメントを入力してください。</p>
+                                <div id="sns-accounts-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
+                                    <!-- SNS account cards will be injected here -->
+                                </div>
+                                <button type="button" id="add-sns-account-btn" class="btn-outline" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+                                    ＋ SNSアカウントを追加する
+                                </button>
+                            </div>
+                            <div class="form-group field-fixed-tools" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 15px;">🛠️ ホーム画面に表示する開発環境や役立つツールを登録します。ツール名、URL、詳細説明を入力してください。</p>
+                                <div id="tools-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
+                                    <!-- Tool cards will be injected here -->
+                                </div>
+                                <button type="button" id="add-tool-btn" class="btn-outline" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+                                    ＋ ツールを追加する
+                                </button>
+                            </div>
+                            <div id="fixed-status" class="status-msg" style="margin-top: 15px;"></div>
+                            <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                                <button type="button" id="fixed-preview-btn" class="btn-outline" style="margin-right: 10px;">プレビュー</button>
+                                <button type="submit" class="btn-glow" id="fixed-submit-btn">この内容で更新する</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </div>
 
-            <div id="tab-fixed" class="admin-pane">
-                <div class="glass" style="margin-bottom: 30px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3>固定箇所（セクション）の編集</h3>
-                        <div>
-                            <select id="fixed-category-select" style="padding: 10px; background: #ffffff; border: 1px solid var(--glass-border); border-radius: 8px; color: #000000; cursor: pointer; font-weight: 600;">
-                                <option value="ABOUT">ABOUT (U-16プロコンとは)</option>
-                                <option value="CLASS_COMP">部門紹介 (競技部門)</option>
-                                <option value="CLASS_WORK">部門紹介 (作品部門)</option>
-                                <option value="TOOLS">ツール紹介</option>
-                                <option value="SNS">SNS</option>
-                                <option value="STAKEHOLDERS">関係者 (主催・共催・協賛)</option>
-                            </select>
+                <!-- 大会規約 PDF -->
+                <div id="panel-terms" class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h2>大会規約 (PDF)</h2>
+                        <p>アップロードしたPDFが、サイトのフッターにある「大会規約」リンク先として公開されます。</p>
+                        <span class="admin-panel-target">共有情報：全ページのフッターに表示されます</span>
+                    </div>
+                    <div class="glass" style="margin-bottom: 30px;">
+                        <div id="terms-current-info" style="margin-bottom: 20px; font-size: 0.9rem;">読み込み中...</div>
+                        <div class="form-group" style="text-align: left;">
+                            <label style="display: block; margin-bottom: 5px;">PDFファイル <span style="font-size: 0.8rem; color: var(--text-dim);">※最大4MB程度まで</span></label>
+                            <input type="file" id="terms-pdf-input" accept="application/pdf">
+                        </div>
+                        <div id="terms-status" class="status-msg"></div>
+                        <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                            <button type="button" class="btn-glow" id="terms-submit-btn">アップロードして反映</button>
                         </div>
                     </div>
-                    
-                    <p style="color: var(--primary); font-weight: 600; margin-bottom: 20px; font-size: 1.1rem;">📝 <span id="current-fixed-category">ABOUT (U-16プロコンとは)</span> を編集します</p>
-                    <form id="fixed-form">
-                        <input type="hidden" id="fixed-id" name="fixed-id">
-                        <div class="form-group field-fixed-title" style="margin-bottom: 15px; text-align: left;">
-                            <label for="fixed-title" style="display: block; margin-bottom: 5px;">見出し / タイトル</label>
-                            <input type="text" id="fixed-title" placeholder="見出しを入力">
-                        </div>
-                        <div class="form-group field-fixed-content" style="margin-bottom: 15px; text-align: left;">
-                            <label for="fixed-content" id="fixed-content-label" style="display: block; margin-bottom: 5px;">本文 / 詳細 (改行・HTMLが反映されます)</label>
-                            <textarea id="fixed-content" rows="10" placeholder="本文を入力"></textarea>
-                        </div>
-                        
-                        <div class="form-group field-fixed-image" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label style="display: block; margin-bottom: 5px;">画像 (1枚) <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
-                            <input type="file" id="fixed-image-input" accept="image/*">
-                            <div id="fixed-image-preview" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
-                        </div>
-
-                        <div class="form-group field-fixed-link" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <label for="fixed-link" style="display: block; margin-bottom: 5px;">関連リンクURL</label>
-                            <input type="url" id="fixed-link" placeholder="https://example.com/...">
-                        </div>
-                        
-                        <div class="form-group field-fixed-class-comp" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <p style="color: var(--text-dim); font-size: 0.95rem; margin-bottom: 20px;">📋 競技部門の「U-16部門」と「O-16部門」の2つ分の紹介記事を編集します。</p>
-                            
-                            <!-- U-16部門 -->
-                            <div style="background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(26,123,196,0.06);">
-                                <h4 style="color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid var(--primary-light); padding-bottom: 5px; font-size: 1.1rem; font-weight: 700;">👦 U-16部門 (16歳以下対象)</h4>
-                                <div style="display: flex; flex-direction: column; gap: 12px;">
-                                    <div>
-                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">詳細 (改行・HTMLが反映されます)</label>
-                                        <textarea id="class-comp-content-u16" rows="4" placeholder="U-16部門の詳細説明を入力" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;"></textarea>
-                                    </div>
-                                    <div>
-                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">画像 (1枚) ※最大5MB程度まで</label>
-                                        <input type="file" id="class-comp-image-input-u16" accept="image/*" style="width: 100%; padding: 5px; border: 1px solid var(--primary-light); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); background: #ffffff;">
-                                        <div id="class-comp-image-preview-u16" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
-                                    </div>
-                                    <div>
-                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">関連リンクURL</label>
-                                        <input type="url" id="class-comp-link-u16" placeholder="https://example.com/u16-details" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- O-16部門 -->
-                            <div style="background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(26,123,196,0.06);">
-                                <h4 style="color: var(--secondary); margin-bottom: 15px; border-bottom: 1px solid var(--primary-light); padding-bottom: 5px; font-size: 1.1rem; font-weight: 700;">🧑 O-16部門 (高校生対象)</h4>
-                                <div style="display: flex; flex-direction: column; gap: 12px;">
-                                    <div>
-                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">詳細 (改行・HTMLが反映されます)</label>
-                                        <textarea id="class-comp-content-o16" rows="4" placeholder="O-16部門の詳細説明を入力" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;"></textarea>
-                                    </div>
-                                    <div>
-                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">画像 (1枚) ※最大5MB程度まで</label>
-                                        <input type="file" id="class-comp-image-input-o16" accept="image/*" style="width: 100%; padding: 5px; border: 1px solid var(--primary-light); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); background: #ffffff;">
-                                        <div id="class-comp-image-preview-o16" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
-                                    </div>
-                                    <div>
-                                        <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">関連リンクURL</label>
-                                        <input type="url" id="class-comp-link-o16" placeholder="https://example.com/o16-details" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group field-fixed-stakeholders" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px;">📋 主催・共催・協賛の団体・企業を登録します。団体名は必須、URLは任意です。</p>
-
-                            <!-- 主催 -->
-                            <div style="margin-bottom: 20px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                    <label style="font-weight: 700; color: var(--primary); font-size: 1rem;">🏆 主催</label>
-                                    <button type="button" class="btn-outline" onclick="addStakeholderCard('主催')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
-                                </div>
-                                <div id="stakeholder-list-主催" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                            </div>
-
-                            <!-- 共催 -->
-                            <div style="margin-bottom: 20px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                    <label style="font-weight: 700; color: var(--secondary); font-size: 1rem;">🤝 共催</label>
-                                    <button type="button" class="btn-outline" onclick="addStakeholderCard('共催')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
-                                </div>
-                                <div id="stakeholder-list-共催" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                            </div>
-
-                            <!-- 協賛 -->
-                            <div style="margin-bottom: 20px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                    <label style="font-weight: 700; color: #a8ff78; font-size: 1rem;">💰 協賛</label>
-                                    <button type="button" class="btn-outline" onclick="addStakeholderCard('協賛')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
-                                </div>
-                                <div id="stakeholder-list-協賛" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                            </div>
-
-                            <!-- 後援 -->
-                            <div style="margin-bottom: 20px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                    <label style="font-weight: 700; color: #78d8ff; font-size: 1rem;">⭐ 後援</label>
-                                    <button type="button" class="btn-outline" onclick="addStakeholderCard('後援')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
-                                </div>
-                                <div id="stakeholder-list-後援" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                            </div>
-                        </div>
-                        <div class="form-group field-fixed-sns" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 15px;">📌 SNSサービスを自由に追加できます。サービス名、ユーザーID（@含む）、リンクURL、コメントを入力してください。</p>
-                            <div id="sns-accounts-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
-                                <!-- SNS account cards will be injected here -->
-                            </div>
-                            <button type="button" id="add-sns-account-btn" class="btn-outline" style="width: 100%; padding: 12px; font-size: 0.95rem;">
-                                ＋ SNSアカウントを追加する
-                            </button>
-                        </div>
-                        <div class="form-group field-fixed-tools" style="margin-bottom: 15px; text-align: left; display: none;">
-                            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 15px;">🛠️ ホーム画面に表示する開発環境や役立つツールを登録します。ツール名、URL、詳細説明を入力してください。</p>
-                            <div id="tools-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
-                                <!-- Tool cards will be injected here -->
-                            </div>
-                            <button type="button" id="add-tool-btn" class="btn-outline" style="width: 100%; padding: 12px; font-size: 0.95rem;">
-                                ＋ ツールを追加する
-                            </button>
-                        </div>
-                        <div id="fixed-status" class="status-msg" style="margin-top: 15px;"></div>
-                        <div class="form-actions" style="margin-top: 20px; text-align: right;">
-                            <button type="button" id="fixed-preview-btn" class="btn-outline" style="margin-right: 10px;">プレビュー</button>
-                            <button type="submit" class="btn-glow" id="fixed-submit-btn">この内容で更新する</button>
-                        </div>
-                    </form>
                 </div>
-            </div>
-        </main>
+
+                <!-- プライバシーポリシー PDF -->
+                <div id="panel-privacy" class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h2>プライバシーポリシー (PDF)</h2>
+                        <p>アップロードしたPDFが、サイトのフッターにある「プライバシーポリシー」リンク先として公開されます。</p>
+                        <span class="admin-panel-target">共有情報：全ページのフッターに表示されます</span>
+                    </div>
+                    <div class="glass" style="margin-bottom: 30px;">
+                        <div id="privacy-current-info" style="margin-bottom: 20px; font-size: 0.9rem;">読み込み中...</div>
+                        <div class="form-group" style="text-align: left;">
+                            <label style="display: block; margin-bottom: 5px;">PDFファイル <span style="font-size: 0.8rem; color: var(--text-dim);">※最大4MB程度まで</span></label>
+                            <input type="file" id="privacy-pdf-input" accept="application/pdf">
+                        </div>
+                        <div id="privacy-status" class="status-msg"></div>
+                        <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                            <button type="button" class="btn-glow" id="privacy-submit-btn">アップロードして反映</button>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
 
         <!-- Add/Edit Modal -->
         <div class="modal" id="qa-modal">

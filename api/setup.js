@@ -56,6 +56,7 @@ export default async function handler(request, response) {
             await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS is_past BOOLEAN DEFAULT FALSE;`;
             await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS past_images JSONB;`;
             await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS participant_comments JSONB;`;
+            await sql`ALTER TABLE news_table ADD COLUMN IF NOT EXISTS poster_image TEXT;`;
         } catch(e) {
             console.error("Alter columns skipped or failed", e);
         }
@@ -79,6 +80,7 @@ export default async function handler(request, response) {
             await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS image TEXT;`;
             await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS link TEXT;`;
             await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS sns_data JSONB;`;
+            await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS entry_url TEXT;`;
             await sql`ALTER TABLE fixed_content_table ALTER COLUMN content DROP NOT NULL;`;
         } catch(e) {
             console.error("Alter columns skipped or failed on fixed_content_table", e);
@@ -96,12 +98,12 @@ export default async function handler(request, response) {
         const checkFixed = await sql`SELECT COUNT(*) FROM fixed_content_table;`;
         if (parseInt(checkFixed.rows[0].count) === 0) {
             await sql`
-                INSERT INTO fixed_content_table (category, title, content)
-                VALUES 
-                ('ABOUT', 'U-16プロコンとは', '「U-16プログラミングコンテスト 静岡大会」は、静岡県内の小・中・高校生を対象とした、次世代のITリーダーを発揮するためのステージです。\n\nプログラミングを通じて課題を解決したり、新しいエンターテインメントを生み出したりする創造力を募集しています。これまでの成果を披露し、多くの仲間と切磋琢磨しましょう。'),
-                ('CLASS_COMP', '部門紹介 (競技部門)', '[{"content":"対戦型プログラムを作成し、アルゴリズムや戦略を競い合う部門です。他者のコードと対戦させることで、より高度なロジックへの理解を深めます。","link":"","image":""},{"content":"より高度なアルゴリズムや多言語で競い合います。","link":"","image":""}]'),
-                ('CLASS_WORK', '部門紹介 (作品部門)', '自由なアイデアでWebサイト、アプリ、ゲームなどを制作する部門です。技術的な完成度だけでなく、独創性や社会への有用性が評価されます。'),
-                ('TOOLS', 'ツール紹介', '[{"name":"Scratch","url":"https://scratch.mit.edu","description":"ビジュアルプログラミング言語。ドラッグ＆ドロップで簡単にプログラムを作ることができます。"},{"name":"Unity","url":"https://unity.com/ja","description":"本格的な3D/2Dゲーム開発エンジン。多くのインディーゲームや商業ゲームで使用されています。"}]');
+                INSERT INTO fixed_content_table (category, title, content, entry_url)
+                VALUES
+                ('ABOUT', 'U-16プロコンとは', '「U-16プログラミングコンテスト 静岡大会」は、静岡県内の小・中・高校生を対象とした、次世代のITリーダーを発揮するためのステージです。\n\nプログラミングを通じて課題を解決したり、新しいエンターテインメントを生み出したりする創造力を募集しています。これまでの成果を披露し、多くの仲間と切磋琢磨しましょう。', NULL),
+                ('CLASS_COMP', '競技部門', '[{"content":"対戦型プログラムを作成し、アルゴリズムや戦略を競い合う部門です。他者のコードと対戦させることで、より高度なロジックへの理解を深めます。","link":"","image":""},{"content":"より高度なアルゴリズムや多言語で競い合います。","link":"","image":""}]', 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/entry'),
+                ('CLASS_WORK', '作品部門', '自由なアイデアでWebサイト、アプリ、ゲームなどを制作する部門です。技術的な完成度だけでなく、独創性や社会への有用性が評価されます。', 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/works'),
+                ('TOOLS', 'ツール紹介', '[{"name":"Blockly Chaser","url":"https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/","description":"競技部門で使用する対戦型プログラミングツールです。ブロックを組み合わせてプログラムを作成し、他のプレイヤーと対戦できます。"}]', NULL);
             `;
         }
 

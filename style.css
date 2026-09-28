@@ -121,10 +121,11 @@ nav a:hover {
 #hero {
     position: relative;
     height: 100vh;
+    padding-top: 68px;
     display: flex;
     align-items: center;
     overflow: hidden;
-    background: linear-gradient(145deg, #deeeff 0%, #f0f6ff 40%, #fff4ee 100%);
+    background: linear-gradient(180deg, var(--bg-dark) 0%, #deeeff 10%, #f0f6ff 28%, #fff4ee 75%);
 }
 
 @media (min-width: 769px) {
@@ -132,7 +133,6 @@ nav a:hover {
         height: 75vh;
         min-height: 550px;
         max-height: 700px;
-        padding-top: 80px;
     }
     .hero-content h2 {
         margin-bottom: 12px !important;
@@ -188,7 +188,7 @@ nav a:hover {
 }
 
 .hero-content h1 {
-    font-size: 4.5rem;
+    font-size: clamp(2.6rem, 7vw, 5.5rem);
     font-weight: 800;
     line-height: 1.15;
     margin-bottom: 30px;
@@ -422,54 +422,96 @@ nav a:hover {
 
 /* Footer */
 footer {
-    padding: 80px 0 40px;
-    background: linear-gradient(135deg, #1A7BC4 0%, #0f5a9a 100%);
-    border-top: none;
-    color: white;
+    position: relative;
+    padding: 32px 0 20px;
+    background: linear-gradient(135deg, var(--primary-pale) 0%, #f4f9ff 100%);
+    border-top: 1px solid var(--glass-border);
+    color: var(--text-main);
+}
+
+/* ページとフッターの境界:中央に短いアクセントを添えたシンプルな区切り */
+footer::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--secondary);
 }
 
 .footer-content {
-    margin-bottom: 60px;
+    margin-bottom: 16px;
 }
 
 .footer-info {
     display: flex;
     flex-direction: column;
-    gap: 40px;
+    gap: 12px;
+}
+
+.footer-section {
+    text-align: center;
 }
 
 .footer-section h4 {
-    color: rgba(255, 213, 194, 0.9);
+    color: var(--primary);
     letter-spacing: 2px;
-    font-size: 0.9rem;
-    margin-bottom: 20px;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
     font-weight: 800;
 }
 
 .footer-section ul {
     list-style: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 28px;
 }
 
 .footer-section ul li {
-    margin-bottom: 10px;
+    margin-bottom: 0;
 }
 
 .footer-section a {
     text-decoration: none;
-    color: rgba(255,255,255,0.75);
+    color: var(--text-dim);
+    font-weight: 400;
+    font-size: 0.85rem;
     transition: color 0.3s ease;
 }
 
 .footer-section a:hover {
-    color: #ffd5c2;
+    color: var(--primary);
 }
 
 .footer-bottom {
     text-align: center;
-    padding-top: 40px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-    color: rgba(255,255,255,0.6);
+    padding-top: 16px;
+    border-top: 1px solid var(--glass-border);
+    color: var(--text-dim);
     font-size: 0.8rem;
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+/* 管理画面リンク:通常は非表示。フッター最下部を5回タップ/クリックするとJSが .revealed を付与する(リロードで再び非表示) */
+.admin-menu-link {
+    display: none;
+    margin-top: 12px;
+    color: var(--text-dim);
+    opacity: 0.6;
+    font-size: 0.8rem;
+    text-decoration: none;
+}
+
+.admin-menu-link.revealed {
+    display: inline-block;
 }
 
 /* Form Styles */
@@ -604,6 +646,324 @@ select, select option, option {
 .delay-2 { animation-delay: 0.4s; }
 .delay-3 { animation-delay: 0.6s; }
 
+/* ============================================
+   Top Navigation — ブラウザ／インデックスのタブ風デザイン
+   ============================================ */
+.topnav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1100;
+    background: rgba(240, 246, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.topnav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    gap: 24px;
+}
+
+.topnav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.topnav-brand img {
+    height: 54px;
+    width: auto;
+}
+
+.topnav-brand span {
+    font-weight: 800;
+    font-size: 1.55rem;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.topnav-nav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+/* 枠(ピルやタブ)を使わないナビゲーション:縦棒アクセント方式。
+   背景ボックスが存在しないため、記事エリアとの境界線問題がそもそも起こり得ない構造 */
+.topnav-nav ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 34px;
+}
+
+.topnav-nav ul a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    text-decoration: none;
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 1.08rem;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+/* 選択中タブの左に付く縦棒:非選択時は透明で場所だけ確保しておく(レイアウトが動かないように) */
+.topnav-nav ul a::before {
+    content: '';
+    width: 3px;
+    height: 20px;
+    border-radius: 2px;
+    background: transparent;
+    transition: background 0.2s ease;
+}
+
+.topnav-nav ul a.tab-blue:hover {
+    color: var(--primary);
+}
+
+.topnav-nav ul a.tab-orange:hover {
+    color: var(--secondary);
+}
+
+.topnav-nav ul a.tab-blue.active {
+    color: var(--primary);
+}
+
+.topnav-nav ul a.tab-blue.active::before {
+    background: var(--primary);
+}
+
+.topnav-nav ul a.tab-orange.active {
+    color: var(--secondary);
+}
+
+.topnav-nav ul a.tab-orange.active::before {
+    background: var(--secondary);
+}
+
+.topnav-nav ul a.active {
+    font-weight: 800;
+}
+
+.topnav-cta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.topnav-cta a {
+    padding: 10px 22px;
+    font-size: 0.85rem;
+}
+
+.topnav-toggle {
+    display: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: white;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.topnav-toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 2px;
+}
+
+.topnav-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 30, 50, 0.45);
+    z-index: 1050;
+}
+
+.topnav-backdrop.active {
+    display: block;
+}
+
+/* 記事の量に関わらず、フッターは常にビューポート下端(またはそれ以降)に固定表示される「スティッキーフッター」構成にする */
+.page-body {
+    padding-top: 68px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-body > main {
+    flex: 1 0 auto;
+    width: 100%;
+}
+
+.page-body > footer {
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.page-header {
+    padding: 90px 0 30px;
+    text-align: center;
+}
+
+.page-header h2 {
+    font-size: clamp(2.6rem, 6vw, 4.2rem);
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--text-main);
+}
+
+@media (max-width: 900px) {
+    .topnav-nav {
+        position: fixed;
+        top: 68px;
+        left: 0;
+        width: 100%;
+        max-height: calc(100vh - 68px);
+        overflow-y: auto;
+        background: rgba(240, 246, 255, 0.98);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--glass-border);
+        box-shadow: 0 12px 24px rgba(26, 123, 196, 0.10);
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 20px 24px 30px;
+        gap: 20px;
+        height: auto;
+        transform: translateY(-12px);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.25s ease;
+        z-index: 1090;
+    }
+
+    .topnav-nav.open {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* モバイルではタブ風演出をやめ、通常の縦積みメニューに戻す */
+    .topnav-nav ul {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+        height: auto;
+    }
+
+    .topnav-nav ul li {
+        height: auto;
+    }
+
+    .topnav-nav ul a {
+        position: static;
+        height: auto;
+        padding: 14px 16px;
+        border-radius: 10px;
+    }
+
+    /* モバイルの縦積みメニューでは縦棒アクセントは使わず、塗りつぶし背景で選択状態を示す */
+    .topnav-nav ul a::before {
+        display: none;
+    }
+
+    .topnav-nav ul a:hover {
+        background: var(--primary-pale);
+    }
+
+    .topnav-nav ul a.active,
+    .topnav-nav ul a.tab-blue.active,
+    .topnav-nav ul a.tab-orange.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .topnav-cta {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .topnav-cta a {
+        text-align: center;
+    }
+
+    .topnav-toggle {
+        display: flex;
+    }
+}
+
+/* Division entry CTA + QR code blocks (used on about.html) */
+.division-badge {
+    display: inline-block;
+    background: var(--primary-pale);
+    color: var(--primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 6px;
+}
+
+.entry-block {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    text-align: center;
+}
+
+.qr-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.qr-box img {
+    width: 110px;
+    height: 110px;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: white;
+    padding: 6px;
+}
+
+.qr-box span {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-align: center;
+}
+
 /* Responsive */
 @media (max-width: 1440px) {
     .container { max-width: 100%; padding: 0 32px; }
@@ -611,10 +971,8 @@ select, select option, option {
 
 @media (max-width: 768px) {
     .container { padding: 0 24px; }
-    .hero-content h1 { font-size: 2.8rem; }
     nav ul { display: none; }
-    .footer-content { flex-direction: column; gap: 40px; }
-    
+
     .category-grid {
         display: flex;
         flex-direction: column;

@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>U-16プログラミングコンテスト 静岡大会 | 未来を創る、キミのコード。</title>
-    <meta name="description" content="静岡県の小・中・高校生を対象としたプログラミングコンテスト「U-16プログラミングコンテスト 静岡大会（ジュニアプロコン in 静岡）」の公式サイトです。">
+    <title>スポンサー | U-16プログラミングコンテスト 静岡大会</title>
+    <meta name="description" content="U-16プログラミングコンテスト静岡大会の主催・共催・協賛・後援企業・団体をご紹介します。">
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="stylesheet" href="/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +13,78 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700;900&display=swap"
         rel="stylesheet">
-    <meta name="google-site-verification" content="alOGACGGHquMxwvZdT8NRFcg4mMzBOoo2hBQ_HUI1Dc" />
+    <style>
+        .sponsor-group {
+            margin-bottom: 50px;
+        }
+
+        .sponsor-group-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-light);
+        }
+
+        .sponsor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .sponsor-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            text-align: center;
+            padding: 25px 20px;
+        }
+
+        .sponsor-card a,
+        .sponsor-card span.sponsor-name {
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+        }
+
+        .sponsor-card a:hover {
+            color: var(--primary);
+        }
+
+        /* ロゴ表示枠:「大」は正方形、「中」は幅が同じで高さが半分。長辺を枠に合わせて縮小表示する */
+        .sponsor-logo-frame {
+            width: 180px;
+            height: 180px;
+            border-radius: 12px;
+            background: white;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            overflow: hidden;
+        }
+
+        .sponsor-logo-frame.size-medium {
+            height: 90px;
+        }
+
+        .sponsor-logo-frame img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .sponsor-logo-frame.sponsor-logo-placeholder {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            background: var(--primary-pale);
+        }
+    </style>
 </head>
 
 <body>
@@ -44,50 +115,22 @@
 
     <div class="page-body">
         <main>
-            <section id="hero" class="full-screen">
-                <div class="hero-bg"></div>
-                <div class="hero-content container">
-                    <h2 class="reveal">2026 EDITION</h2>
-                    <h1 class="reveal delay-1">未来を創る、<br><span class="highlight">キミのコード。</span></h1>
-                    <p class="reveal delay-2">U-16プログラミングコンテスト 静岡大会<br>（ジュニアプロコン in 静岡）</p>
-                    <div class="hero-btns reveal delay-3">
-                        <a href="/about.html" class="btn-outline">詳細を見る</a>
-                        <a href="/entry-form/index.html" class="btn-glow">今すぐエントリー</a>
-                    </div>
-                </div>
-                <div class="scroll-indicator">
-                    <span>SCROLL</span>
-                    <div class="line"></div>
-                </div>
-            </section>
+            <div class="page-header container">
+                <span class="subtitle">SPONSOR</span>
+                <h2>スポンサー</h2>
+                <div class="title-line" style="margin-left: auto; margin-right: auto;"></div>
+            </div>
 
-            <section id="news" class="section" style="padding-top: 50px;">
+            <section class="section" style="padding-top: 0;">
                 <div class="container">
-                    <div class="section-title">
-                        <span class="subtitle">NEWS / ARTICLES</span>
-                        <h2>お知らせ・最新情報</h2>
-                        <div class="title-line"></div>
+                    <div id="sponsor-list-container">
+                        <p style="text-align: center; color: var(--text-dim); padding: 20px;" class="glass">スポンサー情報を読み込んでいます...</p>
                     </div>
-                    <div id="home-news-container" style="display: flex; flex-direction: column; gap: 15px;">
-                        <p style="text-align: center; color: var(--text-dim); padding: 20px;" class="glass">お知らせを読み込んでいます...</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SNSアカウントが1件以上登録されている場合のみ、main.jsが表示に切り替える(未登録時は非表示のまま) -->
-            <section id="sns-section" class="section" style="display: none; padding-top: 0;">
-                <div class="container">
-                    <div class="section-title">
-                        <span class="subtitle">COMMUNITY</span>
-                        <h2>SNS</h2>
-                        <div class="title-line"></div>
-                    </div>
-                    <div id="hp-sns-container"></div>
                 </div>
             </section>
         </main>
 
-        <footer>
+        <footer style="margin-top: 0;">
             <div class="container">
                 <div class="footer-content">
                     <div class="footer-info">

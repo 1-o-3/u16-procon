@@ -1,15 +1,100 @@
-// Header scroll effect
-window.addEventListener('scroll', () => {
-    const header = document.querySelector('header');
-    if (window.scrollY > 50) {
-        header.style.padding = '15px 0';
-        header.style.background = 'rgba(240, 246, 255, 0.97)';
-        header.style.boxShadow = '0 2px 20px rgba(26, 123, 196, 0.12)';
-    } else {
-        header.style.padding = '20px 0';
-        header.style.background = 'rgba(240, 246, 255, 0.88)';
-        header.style.boxShadow = '0 2px 16px rgba(26, 123, 196, 0.08)';
+// 「今すぐエントリー」ボタン/QRコードの既定リンク。管理画面(admin.js)で entry_url が設定されるまではこの値を表示する。
+// admin.js の DEFAULT_COMP_ENTRY_URL / DEFAULT_WORK_ENTRY_URL と必ず同じ値にすること(HPと管理画面の表示に差異が出ないようにするため)。
+const DEFAULT_COMP_ENTRY_URL = 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/entry';
+const DEFAULT_WORK_ENTRY_URL = 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/works';
+
+function buildQrUrl(targetUrl) {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(targetUrl)}`;
+}
+
+// ==============================
+// Top Navigation (共通上部タブメニュー)
+// ==============================
+document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('topnav-toggle');
+    const nav = document.getElementById('topnav-nav');
+    const backdrop = document.getElementById('topnav-backdrop');
+
+    if (toggle && nav) {
+        toggle.addEventListener('click', () => {
+            nav.classList.toggle('open');
+            if (backdrop) backdrop.classList.toggle('active');
+        });
     }
+    if (backdrop && nav) {
+        backdrop.addEventListener('click', () => {
+            nav.classList.remove('open');
+            backdrop.classList.remove('active');
+        });
+    }
+
+    // Close the mobile menu after a nav link is tapped
+    document.querySelectorAll('.topnav-nav a').forEach(a => {
+        a.addEventListener('click', () => {
+            if (nav) nav.classList.remove('open');
+            if (backdrop) backdrop.classList.remove('active');
+        });
+    });
+
+    // Highlight the current page's nav link.
+    // Uses a "longest suffix match" so it works whether the site is opened via
+    // the domain root ("/"), a clean URL ("/qa/"), a full path ("/qa/index.html"),
+    // or even a local file:// path (double-clicking index.html) — all of which
+    // should still resolve to HOME when nothing more specific matches.
+    let currentPath = window.location.pathname.toLowerCase();
+    if (currentPath.endsWith('/')) currentPath += 'index.html';
+
+    let bestLink = null;
+    let bestLen = -1;
+    document.querySelectorAll('.topnav-nav ul a').forEach(a => {
+        const href = (a.getAttribute('href') || '').toLowerCase();
+        if (href && currentPath.endsWith(href) && href.length > bestLen) {
+            bestLink = a;
+            bestLen = href.length;
+        }
+    });
+    if (bestLink) bestLink.classList.add('active');
+});
+
+// ==============================
+// 管理画面リンクの隠し表示
+// フッター最下部(.footer-bottom)を5回タップ/クリックすると
+// AdminMenuリンクが現れる。リロードすればまた非表示に戻る(状態は保存しない)。
+// ==============================
+document.addEventListener('DOMContentLoaded', () => {
+    const zones = document.querySelectorAll('.footer-bottom');
+    if (zones.length === 0) return;
+
+    let tapCount = 0;
+    const reveal = () => {
+        document.querySelectorAll('.admin-menu-link').forEach(a => a.classList.add('revealed'));
+    };
+
+    zones.forEach(zone => {
+        zone.addEventListener('click', () => {
+            tapCount++;
+            if (tapCount >= 5) reveal();
+        });
+    });
+});
+
+// ==============================
+// 開催情報ページ内のタブ切り替え（今期／過去）
+// ==============================
+document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('.schedule-tab');
+    if (tabs.length === 0) return;
+    const panes = document.querySelectorAll('.schedule-pane');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            panes.forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            const target = document.getElementById(tab.dataset.target);
+            if (target) target.classList.add('active');
+        });
+    });
 });
 
 // Intersection Observer for scroll reveals
@@ -46,7 +131,9 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Fetch News Data
+// ==============================
+// お知らせ（ホーム）
+// ==============================
 document.addEventListener('DOMContentLoaded', async () => {
     const container = document.getElementById('home-news-container');
     if (!container) return;
@@ -68,9 +155,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // Filter and display top news
-        const activeNews = newsData.filter(n => n.category === 'お知らせ' || n.category === '今期の開催情報');
-        
+        // お知らせカテゴリのみをホームに表示（開催情報は「開催情報」ページで確認）
+        const activeNews = newsData.filter(n => n.category === 'お知らせ');
+
         if (activeNews.length === 0) {
             container.innerHTML = '<p style="text-align: center; color: var(--text-dim); padding: 20px;" class="glass">現在お知らせはありません。</p>';
             return;
@@ -81,7 +168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         activeNews.slice(0, 5).forEach(item => {
             const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('ja-JP') : new Date().toLocaleDateString('ja-JP');
             const hasSubinfo = item.start_date || item.location || item.target_age;
-            
+
             const div = document.createElement('div');
             div.className = 'glass reveal-on-scroll';
             div.style.padding = '20px';
@@ -89,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.style.flexDirection = 'column';
             div.style.gap = '10px';
             div.style.borderLeft = '4px solid var(--primary)';
-            
+
             let html = `
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; flex-wrap: wrap;">
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -100,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <h3 style="font-size: 1.2rem; color: var(--text-main); font-weight: 700;">${item.title}</h3>
                 <p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap;">${item.content}</p>
             `;
-            
+
             if (hasSubinfo) {
                 html += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--primary-light); display: flex; flex-direction: column; gap: 5px; font-size: 0.9rem;">`;
                 if (item.start_date) {
@@ -134,7 +221,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Fetch Fixed Data (ABOUT, CLASS, SNS)
+// ==============================
+// 固定コンテンツ（ABOUT / 部門紹介 / ツール紹介 / SNS / スポンサー）
+// ==============================
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         let fixedData = [];
@@ -158,62 +247,60 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const aboutEl = document.getElementById('hp-about-content');
                 if (aboutEl) aboutEl.innerHTML = item.content;
             } else if (item.category === 'CLASS_COMP') {
-                const compCard = document.getElementById('hp-class-comp');
-                if (compCard && item.content) {
+                // 競技部門は U-16部門のみを掲載（O-16部門は非掲載）
+                const contentEl = document.getElementById('hp-class-comp-content');
+                const imgContainer = document.getElementById('hp-class-comp-img-container');
+                const moreLinkEl = document.getElementById('hp-class-comp-more-link');
+
+                // 「今すぐエントリー」ボタン＆QRコード（管理画面で編集可能。未設定時は既定URLのまま）
+                const entryUrl = item.entry_url || DEFAULT_COMP_ENTRY_URL;
+                const entryLinkEl = document.getElementById('hp-class-comp-entry-link');
+                const entryQrEl = document.getElementById('hp-class-comp-entry-qr');
+                if (entryLinkEl) entryLinkEl.href = entryUrl;
+                if (entryQrEl) entryQrEl.src = buildQrUrl(entryUrl);
+
+                if (contentEl && item.content) {
+                    let u16 = null;
                     try {
                         const parsed = JSON.parse(item.content);
-                        if (Array.isArray(parsed) && parsed.length >= 2) {
-                            const u16 = parsed[0];
-                            const o16 = parsed[1];
-
-                            const imgHtmlU16 = u16.image ? `<img src="${u16.image}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
-                            const linkHtmlU16 = u16.link ? `<div style="margin-top: 10px;"><a href="${u16.link}" target="_blank" class="btn-outline" style="padding: 6px 10px; font-size: 0.75rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
-
-                            const imgHtmlO16 = o16.image ? `<img src="${o16.image}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
-                            const linkHtmlO16 = o16.link ? `<div style="margin-top: 10px;"><a href="${o16.link}" target="_blank" class="btn-outline" style="padding: 6px 10px; font-size: 0.75rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
-
-                            compCard.innerHTML = `
-                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-                                    <div class="icon" style="margin-bottom: 0;">競技</div>
-                                    <h3 style="font-size: 1.5rem; color: var(--text-main); font-weight: 800; margin-bottom: 0;">競技部門</h3>
-                                </div>
-                                <div style="display: flex; gap: 12px; flex-direction: row; flex-wrap: nowrap;">
-                                    <div style="flex: 1; min-width: 0; background: var(--primary-pale); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
-                                        <div>
-                                            <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.3;">
-                                                <span style="display: flex; align-items: center; gap: 4px;">👦 U-16部門</span>
-                                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-dim); display: block; margin-top: 2px;">(16歳以下対象)</span>
-                                            </h4>
-                                            <div style="color: var(--text-main); font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap;">${u16.content}</div>
-                                            ${imgHtmlU16}
-                                        </div>
-                                        ${linkHtmlU16}
-                                    </div>
-                                    <div style="flex: 1; min-width: 0; background: var(--secondary-pale); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; justify-content: space-between;">
-                                        <div>
-                                            <h4 style="color: var(--secondary); font-weight: 800; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.3;">
-                                                <span style="display: flex; align-items: center; gap: 4px;">🧑 O-16部門</span>
-                                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-dim); display: block; margin-top: 2px;">(高校生対象)</span>
-                                            </h4>
-                                            <div style="color: var(--text-main); font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap;">${o16.content}</div>
-                                            ${imgHtmlO16}
-                                        </div>
-                                        ${linkHtmlO16}
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            renderLegacyClassComp(compCard, item);
-                        }
+                        if (Array.isArray(parsed)) u16 = parsed[0];
                     } catch (e) {
-                        renderLegacyClassComp(compCard, item);
+                        u16 = null;
+                    }
+
+                    if (u16) {
+                        if (u16.content) contentEl.innerHTML = `<p style="white-space: pre-wrap;">${u16.content}</p>`;
+                        if (imgContainer && u16.image) {
+                            imgContainer.innerHTML = `<img src="${u16.image}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
+                            imgContainer.style.border = 'none';
+                        }
+                        if (moreLinkEl && u16.link) {
+                            moreLinkEl.innerHTML = `<a href="${u16.link}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 15px; font-size: 0.85rem;">もっと詳しく</a>`;
+                        }
+                    } else {
+                        // 旧フォーマット（フラットな title/content/image/link）へのフォールバック
+                        contentEl.innerHTML = `<p style="white-space: pre-wrap;">${item.content}</p>`;
+                        if (imgContainer && item.image) {
+                            imgContainer.innerHTML = `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
+                            imgContainer.style.border = 'none';
+                        }
+                        if (moreLinkEl && item.link) {
+                            moreLinkEl.innerHTML = `<a href="${item.link}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 15px; font-size: 0.85rem;">もっと詳しく</a>`;
+                        }
                     }
                 }
             } else if (item.category === 'CLASS_WORK') {
                 const titleEl = document.getElementById('hp-class-work-title');
                 const contentEl = document.getElementById('hp-class-work-content');
                 const imgContainer = document.getElementById('hp-class-work-img-container');
-                
+
+                // 「今すぐエントリー」ボタン＆QRコード（管理画面で編集可能。未設定時は既定URLのまま）
+                const entryUrl = item.entry_url || DEFAULT_WORK_ENTRY_URL;
+                const entryLinkEl = document.getElementById('hp-class-work-entry-link');
+                const entryQrEl = document.getElementById('hp-class-work-entry-qr');
+                if (entryLinkEl) entryLinkEl.href = entryUrl;
+                if (entryQrEl) entryQrEl.src = buildQrUrl(entryUrl);
+
                 if (titleEl && item.title) titleEl.textContent = item.title;
                 if (contentEl && item.content) {
                     contentEl.innerHTML = item.content;
@@ -225,18 +312,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     imgContainer.innerHTML = `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
                     imgContainer.style.border = 'none';
                 }
-            } else if (item.category === 'SNS' && item.sns_data) {
+            } else if (item.category === 'SNS') {
+                // 登録されているSNSアカウントが1件以上あれば表示、無ければセクションごと非表示にする(自動切り替え)
                 const snsContainer = document.getElementById('hp-sns-container');
+                const snsSection = document.getElementById('sns-section');
                 if (snsContainer) {
                     let snsData = item.sns_data;
-                    if (typeof snsData === 'string') snsData = JSON.parse(snsData);
+                    if (typeof snsData === 'string') {
+                        try { snsData = JSON.parse(snsData); } catch (e) { snsData = null; }
+                    }
 
-                    // Support both new array format and legacy object format
                     let accounts = [];
                     if (Array.isArray(snsData)) {
                         accounts = snsData;
-                    } else {
-                        // Legacy format fallback
+                    } else if (snsData) {
                         if (snsData.x && (snsData.x.id || snsData.x.link)) {
                             accounts.push({ service: 'X (旧Twitter)', id: snsData.x.id || '', link: snsData.x.link || '', comment: '' });
                         }
@@ -247,6 +336,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             accounts.push({ service: 'YouTube', id: snsData.youtube.id || '', link: snsData.youtube.link || '', comment: '' });
                         }
                     }
+                    // サービス名・IDのどちらも入っていない空カードは登録数に数えない
+                    accounts = accounts.filter(acc => (acc.service && acc.service.trim()) || (acc.id && acc.id.trim()) || (acc.link && acc.link.trim()));
 
                     if (accounts.length > 0) {
                         let html = `<div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">`;
@@ -255,11 +346,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const label = `${acc.service}${displayId ? '　' + displayId : ''}`;
                             const linkHtml = acc.link
                                 ? `<a href="${acc.link}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: none; font-weight: 700; font-size: 1.05rem;">${label}</a>`
-                                : `<span style="color: white; font-weight: 700; font-size: 1.05rem;">${label}</span>`;
+                                : `<span style="color: var(--text-main); font-weight: 700; font-size: 1.05rem;">${label}</span>`;
                             html += `
-                                <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px 25px; min-width: 200px; text-align: center; display: flex; flex-direction: column; gap: 8px; transition: background 0.2s;" 
-                                     onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
-                                     onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                                <div class="glass" style="padding: 20px 25px; min-width: 200px; text-align: center; display: flex; flex-direction: column; gap: 8px;">
                                     <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">${acc.service}</div>
                                     ${linkHtml}
                                     ${acc.comment ? `<div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 4px;">${acc.comment}</div>` : ''}
@@ -267,44 +356,63 @@ document.addEventListener('DOMContentLoaded', async () => {
                         });
                         html += `</div>`;
                         snsContainer.innerHTML = html;
+                        if (snsSection) snsSection.style.display = 'block';
+                    } else {
+                        snsContainer.innerHTML = '';
+                        if (snsSection) snsSection.style.display = 'none';
                     }
                 }
             } else if (item.category === 'STAKEHOLDERS' && item.content) {
-                let stakeholders = item.content;
-                if (typeof stakeholders === 'string') {
-                    try { stakeholders = JSON.parse(stakeholders); } catch(e) { stakeholders = []; }
-                }
-                if (Array.isArray(stakeholders) && stakeholders.length > 0) {
-                    const groups = {};
-                    stakeholders.forEach(s => {
-                        if (!groups[s.type]) groups[s.type] = [];
-                        groups[s.type].push(s);
-                    });
-
-                    const hostEl = document.getElementById('hp-stakeholder-host');
-                    const coEl = document.getElementById('hp-stakeholder-co');
-
-                    if (hostEl && groups['主催']) {
-                        hostEl.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 0.85rem; font-weight: 600;">主催</span><br>' +
-                            groups['主催'].map(s => s.url
-                                ? '<a href="' + s.url + '" target="_blank" rel="noopener" style="color: rgba(255,255,255,0.75); font-size: 0.9rem; text-decoration: none; display: inline-block; margin-top: 2px;">' + s.name + '</a>'
-                                : '<span style="color: rgba(255,255,255,0.75); font-size: 0.9rem;">' + s.name + '</span>'
-                            ).join('<br>');
+                // スポンサーページ専用のコンテナがある場合のみ描画
+                const sponsorContainer = document.getElementById('sponsor-list-container');
+                if (sponsorContainer) {
+                    let stakeholders = item.content;
+                    if (typeof stakeholders === 'string') {
+                        try { stakeholders = JSON.parse(stakeholders); } catch (e) { stakeholders = []; }
                     }
-                    if (coEl) {
-                        let coHtml = '';
-                        ['共催', '協賛', '後援'].forEach(type => {
-                            if (groups[type]) {
-                                coHtml += '<span style="color: rgba(255,255,255,0.5); font-size: 0.85rem; font-weight: 600; display: block; margin-top: 8px;">' + type + '</span>';
-                                coHtml += groups[type].map(s => s.url
-                                    ? '<a href="' + s.url + '" target="_blank" rel="noopener" style="color: rgba(255,255,255,0.75); font-size: 0.9rem; text-decoration: none; display: inline-block; margin-top: 2px;">' + s.name + '</a>'
-                                    : '<span style="color: rgba(255,255,255,0.75); font-size: 0.9rem;">' + s.name + '</span>'
-                                ).join('<br>');
-                            }
+
+                    if (Array.isArray(stakeholders) && stakeholders.length > 0) {
+                        const order = ['主催', '共催', '協賛', '後援'];
+                        const groups = {};
+                        stakeholders.forEach(s => {
+                            if (!groups[s.type]) groups[s.type] = [];
+                            groups[s.type].push(s);
                         });
-                        if (coHtml) coEl.innerHTML = coHtml;
+
+                        let html = '';
+                        order.forEach(type => {
+                            if (!groups[type] || groups[type].length === 0) return;
+                            html += `<div class="sponsor-group reveal-on-scroll">
+                                <h3 class="sponsor-group-title">${type}</h3>
+                                <div class="sponsor-grid">
+                                    ${groups[type].map(s => {
+                                        // ロゴサイズ:「大」(size:large)は正方形枠、「中」(既定値)は幅同じ・高さ半分の枠
+                                        const sizeClass = s.size === 'large' ? '' : 'size-medium';
+                                        const logoHtml = s.logo
+                                            ? `<div class="sponsor-logo-frame ${sizeClass}"><img src="${s.logo}" alt="${s.name}"></div>`
+                                            : `<div class="sponsor-logo-frame ${sizeClass} sponsor-logo-placeholder">${(s.name || '?').charAt(0)}</div>`;
+                                        const nameHtml = s.url
+                                            ? `<a href="${s.url}" target="_blank" rel="noopener">${s.name}</a>`
+                                            : `<span class="sponsor-name">${s.name}</span>`;
+                                        return `<div class="sponsor-card glass">${logoHtml}${nameHtml}</div>`;
+                                    }).join('')}
+                                </div>
+                            </div>`;
+                        });
+
+                        sponsorContainer.innerHTML = html;
+                        document.querySelectorAll('#sponsor-list-container .reveal-on-scroll').forEach(el => observer.observe(el));
+                    } else {
+                        sponsorContainer.innerHTML = '<p style="text-align: center; color: var(--text-dim); padding: 20px;" class="glass">スポンサー情報は準備中です。</p>';
                     }
                 }
+            } else if (item.category === 'TERMS' && item.content) {
+                // 管理画面からアップロードされたPDFがあればフッターのリンク先を差し替える(未設定なら元のdocs内PDFのまま)
+                const el = document.getElementById('footer-terms-link');
+                if (el) el.href = item.content;
+            } else if (item.category === 'PRIVACY_POLICY' && item.content) {
+                const el = document.getElementById('footer-privacy-link');
+                if (el) el.href = item.content;
             } else if (item.category === 'TOOLS' && item.content) {
                 const toolsContainer = document.getElementById('hp-tools-container');
                 if (toolsContainer) {
@@ -313,10 +421,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (Array.isArray(tools) && tools.length > 0) {
                             let html = '';
                             tools.forEach(tool => {
-                                const titleHtml = tool.url 
-                                    ? `<h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 10px;"><a href="${tool.url}" target="_blank" style="color: var(--primary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--secondary)'" onmouseout="this.style.color='var(--primary)'">${tool.name} 🔗</a></h3>` 
+                                const titleHtml = tool.url
+                                    ? `<h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 10px;"><a href="${tool.url}" target="_blank" style="color: var(--primary); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--secondary)'" onmouseout="this.style.color='var(--primary)'">${tool.name} 🔗</a></h3>`
                                     : `<h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px;">${tool.name}</h3>`;
-                                
+
                                 html += `
                                     <div class="glass reveal-on-scroll" style="padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 30px rgba(26, 123, 196, 0.1)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
                                         ${titleHtml}
@@ -345,7 +453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================
-// Fetch "今期の開催情報" Section
+// 「今期の開催情報」セクション
 // ==============================
 document.addEventListener('DOMContentLoaded', async () => {
     const container = document.getElementById('home-current-container');
@@ -391,6 +499,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Title
             html += `<h3 style="font-size: 1.3rem; color: var(--text-main); font-weight: 700; margin-bottom: 12px;">${item.title}</h3>`;
+
+            // Poster image (ポスター画像)
+            if (item.poster_image) {
+                html += `<img src="${item.poster_image}" alt="${item.title} ポスター" style="width: 100%; max-width: 480px; display: block; margin: 0 auto 15px; border-radius: 12px; box-shadow: 0 4px 16px rgba(26, 123, 196, 0.12);">`;
+            }
 
             // Event details grid
             let detailsHtml = '';
@@ -461,7 +574,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================
-// Fetch "過去の開催情報" Section
+// 「過去の開催情報」セクション
 // ==============================
 document.addEventListener('DOMContentLoaded', async () => {
     const container = document.getElementById('home-past-container');
@@ -488,7 +601,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (data.length === 0) {
             container.innerHTML = `
                 <div class="glass" style="text-align: center; padding: 40px;">
-                    <p style="color: var(--text-dim);">過去の大会データは現在整理中です。</p>
+                    <p style="color: var(--text-dim);">過去の開催情報はまだありません。</p>
                 </div>`;
             return;
         }
@@ -555,135 +668,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">過去の開催情報の読み込みに失敗しました。</p>';
     }
 });
-
-// ==============================
-// Fetch "他所での開催" Section
-// ==============================
-document.addEventListener('DOMContentLoaded', async () => {
-    const container = document.getElementById('home-other-container');
-    if (!container) return;
-
-    try {
-        let data = [];
-        try {
-            const response = await fetch('/api/news?category=' + encodeURIComponent('他所での開催'));
-            if (response.ok) {
-                data = await response.json();
-            } else {
-                throw new Error('API fetch failed');
-            }
-        } catch (e) {
-            console.log("Using local mock data for other events");
-            const local = localStorage.getItem('mockNewsData');
-            if (local) {
-                const allNews = JSON.parse(local);
-                data = allNews.filter(n => n.category === '他所での開催');
-            }
-        }
-
-        if (data.length === 0) {
-            container.innerHTML = `
-                <div class="glass" style="text-align: center; padding: 40px;">
-                    <p style="color: var(--text-dim);">U-16プログラミングコンテストは全国各地で開催されています。<br>各地域の情報は随時更新されます。</p>
-                </div>`;
-            return;
-        }
-
-        container.innerHTML = '';
-
-        // Intro text
-        const intro = document.createElement('p');
-        intro.style.cssText = 'color: var(--text-dim); text-align: center; margin-bottom: 10px; font-size: 0.95rem;';
-        intro.textContent = 'U-16プログラミングコンテストは全国各地で開催されています。各地域の熱い戦いにもご注目ください。';
-        container.appendChild(intro);
-
-        // Grid layout for regional events
-        const grid = document.createElement('div');
-        grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;';
-
-        data.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'glass reveal-on-scroll';
-            card.style.cssText = 'padding: 20px; display: flex; flex-direction: column; gap: 10px; transition: transform 0.2s;';
-            card.onmouseover = () => card.style.transform = 'translateY(-3px)';
-            card.onmouseout = () => card.style.transform = 'translateY(0)';
-
-            let html = '';
-
-            // Prefecture badge + Title
-            if (item.prefecture) {
-                html += `<span style="background: var(--secondary); color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; width: fit-content;">${item.prefecture}</span>`;
-            }
-            html += `<h3 style="font-size: 1.1rem; color: var(--text-main); font-weight: 700;">${item.title}</h3>`;
-
-            // Date
-            if (item.start_date) {
-                const dateStr = new Date(item.start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
-                const timeStr = item.start_time ? ` ${item.start_time}` : '';
-                const endStr = item.end_time ? ` 〜 ${item.end_time}` : '';
-                html += `<p style="color: var(--primary); font-size: 0.85rem;">📅 ${dateStr}${timeStr}${endStr}</p>`;
-            }
-
-            // Content
-            if (item.content) {
-                const shortContent = item.content.length > 100 ? item.content.substring(0, 100) + '...' : item.content;
-                html += `<p style="color: var(--text-dim); font-size: 0.9rem; line-height: 1.6;">${shortContent}</p>`;
-            }
-
-            // Participants & divisions
-            let metaHtml = '';
-            if (item.participants) {
-                metaHtml += `<span style="font-size: 0.8rem; color: var(--text-dim);">👥 ${item.participants}名</span>`;
-            }
-            if (item.divisions) {
-                let divList = typeof item.divisions === 'string' ? JSON.parse(item.divisions) : item.divisions;
-                if (divList && divList.length > 0) {
-                    const hasSubdivision = divList.some(d => d.includes('競技部門 ('));
-                    if (hasSubdivision) {
-                        divList = divList.filter(d => d !== '競技部門');
-                    }
-                    metaHtml += `<span style="font-size: 0.8rem; color: var(--text-dim);">🏆 ${divList.join('・')}</span>`;
-                }
-            }
-            if (metaHtml) {
-                html += `<div style="display: flex; gap: 12px; flex-wrap: wrap;">${metaHtml}</div>`;
-            }
-
-            // Images (show first image as thumbnail)
-            if (item.images && item.images.length > 0) {
-                const imgs = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
-                if (imgs.length > 0) {
-                    html += `<img src="${imgs[0]}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-top: 5px;">`;
-                }
-            }
-
-            // Link
-            if (item.overview_url) {
-                html += `<a href="${item.overview_url}" target="_blank" class="btn-outline" style="padding: 8px 15px; font-size: 0.85rem; text-align: center; margin-top: auto;">詳細を見る</a>`;
-            }
-
-            card.innerHTML = html;
-            grid.appendChild(card);
-            observer.observe(card);
-        });
-
-        container.appendChild(grid);
-
-    } catch (e) {
-        container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">他所での開催情報の読み込みに失敗しました。</p>';
-    }
-});
-
-function renderLegacyClassComp(compCard, item) {
-    const title = item.title || '競技部門';
-    const content = item.content || '';
-    const imgHtml = item.image ? `<div style="margin-top: 20px; height: 180px; overflow: hidden; border-radius: 12px;"><img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover;"></div>` : '';
-    const linkHtml = item.link ? `<div style="margin-top: 15px;"><a href="${item.link}" target="_blank" class="btn-outline" style="padding: 8px 15px; font-size: 0.85rem;">もっと詳しく</a></div>` : '';
-    compCard.innerHTML = `
-        <div class="icon">競技</div>
-        <h3>${title}</h3>
-        <div><p>${content}</p></div>
-        ${imgHtml}
-        ${linkHtml}
-    `;
-}

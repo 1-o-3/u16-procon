@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>U-16プロコンとは | U-16プログラミングコンテスト 静岡大会</title>
+    <meta name="description" content="U-16プログラミングコンテスト静岡大会の概要、競技部門・作品部門の紹介、使用ツールの紹介ページです。">
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700;900&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <header class="topnav" id="topnav">
+        <div class="container topnav-inner">
+            <a href="/index.html" class="topnav-brand">
+                <img src="/logo.png" alt="U-16 ProCon Shizuoka Logo">
+                <span>U-16 SHIZUOKA</span>
+            </a>
+            <nav class="topnav-nav" id="topnav-nav">
+                <ul>
+                    <li><a href="/index.html" class="tab-blue">HOME</a></li>
+                    <li><a href="/about.html" class="tab-orange">大会について</a></li>
+                    <li><a href="/schedule.html" class="tab-blue">開催情報</a></li>
+                    <li><a href="/sponsor.html" class="tab-orange">スポンサー</a></li>
+                    <li><a href="/qa/index.html" class="tab-blue">よくあるご質問</a></li>
+                </ul>
+                <div class="topnav-cta">
+                    <a href="https://forms.gle/92aPXY5QAf1Min1u7" target="_blank" rel="noopener" class="btn-outline">お問い合わせ</a>
+                </div>
+            </nav>
+            <button id="topnav-toggle" class="topnav-toggle" aria-label="メニューを開く">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+    <div id="topnav-backdrop" class="topnav-backdrop"></div>
+
+    <div class="page-body">
+        <main>
+            <div class="page-header container">
+                <span class="subtitle">ABOUT</span>
+                <h2>U-16プロコンとは</h2>
+                <div class="title-line" style="margin-left: auto; margin-right: auto;"></div>
+            </div>
+
+            <section class="section" style="padding-top: 20px;">
+                <div class="container">
+                    <div class="about-grid">
+                        <div class="about-text" id="hp-about-content">
+                            <p>「U-16プログラミングコンテスト 静岡大会」は、静岡県内の小・中・高校生を対象とした、次世代のITリーダーを発揮するためのステージです。</p>
+                            <p>プログラミングを通じて課題を解決したり、新しいエンターテインメントを生み出したりする創造力を募集しています。これまでの成果を披露し、多くの仲間と切磋琢磨しましょう。</p>
+                        </div>
+                    </div>
+
+                    <div class="division-title reveal-on-scroll" style="margin-top: 80px; margin-bottom: 40px;">
+                        <span class="subtitle">DIVISIONS</span>
+                        <h3 style="font-size: 1.8rem; font-weight: 700; color: var(--text-main);">部門紹介</h3>
+                        <div class="title-line" style="width: 40px; height: 3px;"></div>
+                    </div>
+
+                    <div class="category-grid">
+                        <div class="category-card glass" id="hp-class-comp">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                <div class="icon" style="margin-bottom: 0;">競技</div>
+                                <div>
+                                    <h3 style="margin-bottom: 0;">競技部門</h3>
+                                    <span class="division-badge">U-16部門（16歳以下対象）</span>
+                                </div>
+                            </div>
+                            <div id="hp-class-comp-content" style="margin-top: 20px;">
+                                <p>対戦型プログラムを作成し、アルゴリズムや戦略を競い合う部門です。他者のコードと対戦させることで、より高度なロジックへの理解を深めます。</p>
+                            </div>
+                            <div class="placeholder-img" id="hp-class-comp-img-container" style="margin-top: 20px; height: 180px; background: var(--primary-pale); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); border: 2px dashed var(--primary-light); overflow: hidden;">
+                                <span>Coming Soon (Photo/Detail)</span>
+                            </div>
+                            <div id="hp-class-comp-more-link"></div>
+
+                            <!-- 競技部門エントリー導線（管理画面の「競技部門」から変更可能。未設定時はデフォルトURLを表示） -->
+                            <div class="entry-block">
+                                <a id="hp-class-comp-entry-link" href="https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/entry" target="_blank" rel="noopener" class="btn-glow">今すぐエントリー</a>
+                                <div class="qr-box">
+                                    <img id="hp-class-comp-entry-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https%3A%2F%2Fblockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev%2Fentry" alt="競技部門エントリー用QRコード" loading="lazy">
+                                    <span>QRコードからも<br>アクセスできます</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="category-card glass" id="hp-class-work">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                                <div class="icon" style="margin-bottom: 0;">作品</div>
+                                <h3 id="hp-class-work-title" style="margin-bottom: 0;">作品部門</h3>
+                            </div>
+                            <div id="hp-class-work-content">
+                                <p>自由なアイデアでWebサイト、アプリ、ゲームなどを制作する部門です。技術的な完成度だけでなく、独創性や社会への有用性が評価されます。</p>
+                            </div>
+                            <div class="placeholder-img" id="hp-class-work-img-container" style="margin-top: 20px; height: 180px; background: var(--secondary-pale); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--secondary); border: 2px dashed var(--secondary-light); overflow: hidden;">
+                                <span>Coming Soon (Photo/Detail)</span>
+                            </div>
+
+                            <!-- 作品部門エントリー導線（管理画面の「作品部門」から変更可能。未設定時はデフォルトURLを表示） -->
+                            <div class="entry-block">
+                                <a id="hp-class-work-entry-link" href="https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/works" target="_blank" rel="noopener" class="btn-glow">今すぐエントリー</a>
+                                <div class="qr-box">
+                                    <img id="hp-class-work-entry-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https%3A%2F%2Fblockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev%2Fworks" alt="作品部門エントリー用QRコード" loading="lazy">
+                                    <span>QRコードからも<br>アクセスできます</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tools" class="section" style="background: rgba(26, 123, 196, 0.02); padding-top: 20px; padding-bottom: 50px;">
+                <div class="container">
+                    <div class="section-title reveal-on-scroll">
+                        <span class="subtitle">TOOLS</span>
+                        <h2>ツール紹介</h2>
+                        <div class="title-line"></div>
+                    </div>
+                    <div id="hp-tools-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 40px;">
+                        <p style="text-align: center; color: var(--text-dim); padding: 20px; grid-column: 1/-1;" class="glass">ツール情報を読み込んでいます...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer style="margin-top: 0;">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-info">
+                        <div class="footer-section">
+                            <h4>LINKS</h4>
+                            <ul>
+                                <li><a href="/docs/U-16 SHIZUOKA大会規約.pdf" target="_blank" id="footer-terms-link">大会規約</a></li>
+                                <li><a href="/docs/U-16 SHIZUOKA プライバシーポリシー.pdf" target="_blank" id="footer-privacy-link">プライバシーポリシー</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026- U-16 Programming Contest Shizuoka. All Rights Reserved.</p>
+                    <a href="/admin/index.html" class="admin-menu-link">AdminMenu</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/main.js"></script>
+</body>
+
+</html>
