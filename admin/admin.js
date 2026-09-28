@@ -1893,8 +1893,10 @@ function handlePolicyPdfSelect(e, kind) {
         e.target.value = '';
         return;
     }
-    if (file.size > 4 * 1024 * 1024) {
-        alert('ファイルサイズは最大4MBまでです。');
+    if (file.size > 3 * 1024 * 1024) {
+        // Base64化すると元ファイルの約1.33倍のサイズになり、サーバーレス関数のリクエストサイズ上限に
+        // 引っかかりやすくなるため、元ファイルの上限は余裕を持って3MBまでにしておく
+        alert('ファイルサイズは最大3MBまでです。');
         e.target.value = '';
         return;
     }
@@ -1931,15 +1933,35 @@ async function fetchPolicyPdf(kind) {
                 infoEl.innerHTML = `<a href="${data.content}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">アップロード済み(${data.title || title})</span>`;
             }
         } else {
-            if (kind === 'terms') currentTermsPdfBase64 = null;
-            else currentPrivacyPdfBase64 = null;
-            if (infoEl) {
-                infoEl.innerHTML = `<span style="color: var(--text-dim);">まだアップロードされていません。未アップロードの間、公開サイトは既存の docs フォルダ内のPDFを表示します。</span>`;
-            }
+            showLocalPolicyPdfFallback(kind, category, title, infoEl);
         }
     } catch (e) {
         console.error(e);
-        if (infoEl) infoEl.innerHTML = `<span style="color: var(--text-dim);">読み込みに失敗しました(DB未接続の可能性があります)。</span>`;
+        // --- Fallback for local demo ONLY (DBサーバーが無い/繋がらない環境向け) ---
+        showLocalPolicyPdfFallback(kind, category, title, infoEl);
+    }
+}
+
+// DB未接続時、ブラウザ内(localStorage の mockFixedData ― 公開サイト側(main.js)が読むのと同じキー)に
+// 保存されたPDFがあればそれを表示する
+function showLocalPolicyPdfFallback(kind, category, title, infoEl) {
+    try {
+        const localFixed = JSON.parse(localStorage.getItem('mockFixedData') || '[]');
+        const localEntry = localFixed.find(f => f.category === category);
+        if (localEntry && localEntry.content) {
+            if (kind === 'terms') currentTermsPdfBase64 = localEntry.content;
+            else currentPrivacyPdfBase64 = localEntry.content;
+            if (infoEl) {
+                infoEl.innerHTML = `<a href="${localEntry.content}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">ブラウザ内に一時保存済み(${localEntry.title || title})</span>`;
+            }
+            return;
+        }
+    } catch (e) { /* ignore */ }
+
+    if (kind === 'terms') currentTermsPdfBase64 = null;
+    else currentPrivacyPdfBase64 = null;
+    if (infoEl) {
+        infoEl.innerHTML = `<span style="color: var(--text-dim);">まだアップロードされていません。未アップロードの間、公開サイトは既存の docs フォルダ内のPDFを表示します。</span>`;
     }
 }
 
@@ -1962,7 +1984,7 @@ async function submitPolicyPdf(kind) {
         });
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.error || 'Failed to save');
+            throw new Error(errData.error || ('HTTP ' + res.status));
         }
 
         if (statusEl) {
@@ -1973,9 +1995,15 @@ async function submitPolicyPdf(kind) {
         await fetchPolicyPdf(kind);
     } catch (error) {
         console.error(error);
+
+        // --- Fallback for local demo ONLY (DBサーバーが無い/繋がらない環境向け) ---
+        // API保存が失敗した場合でも、ブラウザ内(mockFixedData ― 公開サイト側と共通のキー)には必ず保存する。
+        saveFixedContentToLocalStorage(category, { category, title, content: base64 });
+
         if (statusEl) {
-            statusEl.textContent = '保存に失敗しました。' + (error.message ? '(' + error.message + ')' : '');
+            statusEl.textContent = 'DBへの保存に失敗しましたが、ブラウザ内に一時保存しました。(' + (error.message || 'エラー') + ')';
             statusEl.className = 'status-msg error';
         }
+        await fetchPolicyPdf(kind);
     }
 }
