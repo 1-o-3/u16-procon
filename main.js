@@ -482,9 +482,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="glass" style="text-align: center; padding: 40px;">
                     <h3 style="color: var(--text-main); margin-bottom: 10px;">2026年度 大会概要</h3>
                     <p style="color: var(--text-dim);">現在開催準備を進めております。詳細が決まり次第お知らせします。</p>
-                    <div style="margin-top: 20px;">
-                        <a href="https://forms.gle/9AU6rz7fzH7mLzQM7" target="_blank" class="btn-glow">参加申し込みフォームはこちら</a>
-                    </div>
                 </div>`;
             return;
         }
