@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         let fixedData = [];
         try {
-            const response = await fetch('/api/fixed');
+            const response = await fetch('/api/fixed', { cache: 'no-store' });
             if (response.ok) {
                 fixedData = await response.json();
             } else {

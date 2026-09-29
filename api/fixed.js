@@ -30,6 +30,8 @@ export default async function handler(request, response) {
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // アップロード直後にブラウザ/CDNが古いレスポンスを返さないよう、キャッシュを明示的に無効化する
+    response.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
 
     if (request.method === 'OPTIONS') {
         return response.status(200).end();
