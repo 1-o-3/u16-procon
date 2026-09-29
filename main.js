@@ -7,6 +7,29 @@ function buildQrUrl(targetUrl) {
     return `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(targetUrl)}`;
 }
 
+// data: URI(base64)のPDFを、直接href(=タブのURL)にすると数MBの巨大なURLになり、
+// ブラウザのURL長制限に引っかかって白紙タブが開いてしまう(Chrome等では実測でも再現する既知の挙動)。
+// blob: URLに変換すればURL自体は短く保たれ、内容はメモリ上のBlobとして渡されるため正しく表示される。
+function dataUrlToBlobUrl(dataUrl) {
+    try {
+        const commaIndex = dataUrl.indexOf(',');
+        const header = dataUrl.slice(0, commaIndex);
+        const base64 = dataUrl.slice(commaIndex + 1);
+        const mimeMatch = header.match(/data:([^;]+)/);
+        const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+        const blob = new Blob([bytes], { type: mime });
+        return URL.createObjectURL(blob);
+    } catch (e) {
+        console.error('Failed to convert PDF data URL to a blob URL', e);
+        return dataUrl; // 変換に失敗した場合は元のdata URLのままにする(最低限リンクは残す)
+    }
+}
+
 // ==============================
 // Top Navigation (共通上部タブメニュー)
 // ==============================
@@ -409,10 +432,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (item.category === 'TERMS' && item.content) {
                 // 管理画面からアップロードされたPDFがあればフッターのリンク先を差し替える(未設定なら元のdocs内PDFのまま)
                 const el = document.getElementById('footer-terms-link');
-                if (el) el.href = item.content;
+                if (el) el.href = dataUrlToBlobUrl(item.content);
             } else if (item.category === 'PRIVACY_POLICY' && item.content) {
                 const el = document.getElementById('footer-privacy-link');
-                if (el) el.href = item.content;
+                if (el) el.href = dataUrlToBlobUrl(item.content);
             } else if (item.category === 'TOOLS' && item.content) {
                 const toolsContainer = document.getElementById('hp-tools-container');
                 if (toolsContainer) {

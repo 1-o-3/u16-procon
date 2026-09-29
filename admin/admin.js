@@ -1,3 +1,26 @@
+// data: URI(base64)のPDFをそのままhrefにすると、数MBの巨大なURLになりブラウザのURL長制限に
+// 引っかかって白紙タブが開いてしまう(Chrome等で実測で再現する挙動)。blob: URLに変換して回避する。
+// main.js側にも同名の関数があるが、こちらは管理画面(admin.js)専用の別ファイルなので複製している。
+function dataUrlToBlobUrl(dataUrl) {
+    try {
+        const commaIndex = dataUrl.indexOf(',');
+        const header = dataUrl.slice(0, commaIndex);
+        const base64 = dataUrl.slice(commaIndex + 1);
+        const mimeMatch = header.match(/data:([^;]+)/);
+        const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+        const blob = new Blob([bytes], { type: mime });
+        return URL.createObjectURL(blob);
+    } catch (e) {
+        console.error('Failed to convert PDF data URL to a blob URL', e);
+        return dataUrl;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Check login state (simple session storage)
     if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
@@ -1930,7 +1953,7 @@ async function fetchPolicyPdf(kind) {
             else currentPrivacyPdfBase64 = data.content;
 
             if (infoEl) {
-                infoEl.innerHTML = `<a href="${data.content}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">アップロード済み(${data.title || title})</span>`;
+                infoEl.innerHTML = `<a href="${dataUrlToBlobUrl(data.content)}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">アップロード済み(${data.title || title})</span>`;
             }
         } else {
             showLocalPolicyPdfFallback(kind, category, title, infoEl);
@@ -1952,7 +1975,7 @@ function showLocalPolicyPdfFallback(kind, category, title, infoEl) {
             if (kind === 'terms') currentTermsPdfBase64 = localEntry.content;
             else currentPrivacyPdfBase64 = localEntry.content;
             if (infoEl) {
-                infoEl.innerHTML = `<a href="${localEntry.content}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">ブラウザ内に一時保存済み(${localEntry.title || title})</span>`;
+                infoEl.innerHTML = `<a href="${dataUrlToBlobUrl(localEntry.content)}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">ブラウザ内に一時保存済み(${localEntry.title || title})</span>`;
             }
             return;
         }
