@@ -78,6 +78,17 @@ export default async function handler(request, response) {
             const { category, title, content, start_date, start_time, end_time, location, map_url, overview_url, application_url, target_age, divisions, images, past_images, participant_comments, prefecture, participants, is_tentative, is_past, poster_image } = request.body;
             if (!category || !title) throw new Error('Missing required fields');
 
+            // 直前の投稿とまったく同じ内容(タイトル・本文)の連続投稿は受け付けない(ボタン連打などによる二重投稿防止)
+            const latest = await sql`
+                SELECT title, content FROM news_table
+                WHERE category = ${category}
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1;
+            `;
+            if (latest.rowCount > 0 && latest.rows[0].title === title && (latest.rows[0].content || '') === (content || '')) {
+                return response.status(409).json({ error: '直前の投稿と同じ内容のため、投稿しませんでした。' });
+            }
+
             const { rows } = await sql`
                 INSERT INTO news_table (
                     category, title, content, start_date, start_time, end_time,

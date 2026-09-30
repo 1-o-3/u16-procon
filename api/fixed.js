@@ -1,5 +1,7 @@
 import { sql } from '@vercel/postgres';
 
+const DELETABLE_CATEGORIES = ['TERMS', 'PRIVACY_POLICY'];
+
 async function ensureTableExists() {
     await sql`
         CREATE TABLE IF NOT EXISTS fixed_content_table (
@@ -19,6 +21,8 @@ async function ensureTableExists() {
         await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS link TEXT;`;
         await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS sns_data JSONB;`;
         await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS entry_url TEXT;`;
+        // 「今すぐエントリー」ボタン＆QRコードをHPに表示するか(会期外は管理画面から非表示にする)
+        await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS entry_enabled BOOLEAN DEFAULT TRUE;`;
         await sql`ALTER TABLE fixed_content_table ALTER COLUMN content DROP NOT NULL;`;
     } catch(e) {
         console.error("Alter columns failed on fixed_content_table", e);
@@ -28,7 +32,7 @@ async function ensureTableExists() {
 export default async function handler(request, response) {
     // Enable CORS for API
     response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     // アップロード直後にブラウザ/CDNが古いレスポンスを返さないよう、キャッシュを明示的に無効化する
     response.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -55,12 +59,13 @@ export default async function handler(request, response) {
         }
 
         if (request.method === 'POST' || request.method === 'PUT') {
-            const { category, title, content, image, link, sns_data, entry_url } = request.body;
+            const { category, title, content, image, link, sns_data, entry_url, entry_enabled } = request.body;
             if (!category) throw new Error('Missing required fields');
 
             // Ensure content is never null to handle potential NOT NULL constraint
             const safeContent = content || '';
             const safeTitle = title || '';
+            const safeEntryEnabled = entry_enabled !== false;
 
             const existing = await sql`SELECT * FROM fixed_content_table WHERE category = ${category};`;
 
@@ -73,6 +78,7 @@ export default async function handler(request, response) {
                         link = ${link || null},
                         sns_data = ${sns_data ? JSON.stringify(sns_data) : null},
                         entry_url = ${entry_url || null},
+                        entry_enabled = ${safeEntryEnabled},
                         updated_at = CURRENT_TIMESTAMP
                     WHERE category = ${category}
                     RETURNING *;
@@ -80,12 +86,21 @@ export default async function handler(request, response) {
                 return response.status(200).json(rows[0]);
             } else {
                 const { rows } = await sql`
-                    INSERT INTO fixed_content_table (category, title, content, image, link, sns_data, entry_url)
-                    VALUES (${category}, ${safeTitle}, ${safeContent}, ${image || null}, ${link || null}, ${sns_data ? JSON.stringify(sns_data) : null}, ${entry_url || null})
+                    INSERT INTO fixed_content_table (category, title, content, image, link, sns_data, entry_url, entry_enabled)
+                    VALUES (${category}, ${safeTitle}, ${safeContent}, ${image || null}, ${link || null}, ${sns_data ? JSON.stringify(sns_data) : null}, ${entry_url || null}, ${safeEntryEnabled})
                     RETURNING *;
                 `;
                 return response.status(201).json(rows[0]);
             }
+        }
+
+        if (request.method === 'DELETE') {
+            // アップロード取り消しは大会規約・プライバシーポリシーのPDFのみ許可する(他の固定コンテンツを誤って消さないように)
+            const { category } = request.body || {};
+            if (!DELETABLE_CATEGORIES.includes(category)) throw new Error('This category cannot be deleted');
+
+            await sql`DELETE FROM fixed_content_table WHERE category = ${category};`;
+            return response.status(200).json({ message: 'Deleted successfully' });
         }
 
     } catch (error) {

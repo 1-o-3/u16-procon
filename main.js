@@ -7,6 +7,41 @@ function buildQrUrl(targetUrl) {
     return `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(targetUrl)}`;
 }
 
+// 「今すぐエントリー」ボタン＆QRコードの表示切り替え。
+// 管理画面で非表示(entry_enabled = false)にされていれば隠す。レコード自体が無い場合は既定URLで表示する。
+function applyEntryBlock(kind, defaultUrl, item) {
+    const linkEl = document.getElementById(`hp-class-${kind}-entry-link`);
+    if (!linkEl) return;
+    const block = linkEl.closest('.entry-block');
+    const enabled = !item || item.entry_enabled !== false;
+    if (block) block.style.display = enabled ? '' : 'none';
+    if (!enabled) return;
+
+    const entryUrl = (item && item.entry_url) || defaultUrl;
+    linkEl.href = entryUrl;
+    const qrEl = document.getElementById(`hp-class-${kind}-entry-qr`);
+    if (qrEl) qrEl.src = buildQrUrl(entryUrl);
+}
+
+// フッターの大会規約・プライバシーポリシーは、管理画面でPDFがアップロードされているものだけ表示する
+function applyPolicyLinks(termsItem, privacyItem) {
+    const entries = [
+        ['footer-terms-link', termsItem],
+        ['footer-privacy-link', privacyItem]
+    ];
+    let anyVisible = false;
+    entries.forEach(([id, item]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const hasPdf = !!(item && item.content);
+        if (hasPdf) el.href = dataUrlToBlobUrl(item.content);
+        el.closest('li').style.display = hasPdf ? '' : 'none';
+        if (hasPdf) anyVisible = true;
+    });
+    const section = document.getElementById('footer-links-section');
+    if (section) section.style.display = anyVisible ? '' : 'none';
+}
+
 // data: URI(base64)のPDFを、直接href(=タブのURL)にすると数MBの巨大なURLになり、
 // ブラウザのURL長制限に引っかかって白紙タブが開いてしまう(Chrome等では実測でも再現する既知の挙動)。
 // blob: URLに変換すればURL自体は短く保たれ、内容はメモリ上のBlobとして渡されるため正しく表示される。
@@ -238,6 +273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             container.appendChild(div);
             observer.observe(div); // Apply scroll reveal to new elements
         });
+        renderPdfImages(container);
 
     } catch (e) {
         container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">お知らせの読み込みに失敗しました。</p>';
@@ -275,13 +311,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const imgContainer = document.getElementById('hp-class-comp-img-container');
                 const moreLinkEl = document.getElementById('hp-class-comp-more-link');
 
-                // 「今すぐエントリー」ボタン＆QRコード（管理画面で編集可能。未設定時は既定URLのまま）
-                const entryUrl = item.entry_url || DEFAULT_COMP_ENTRY_URL;
-                const entryLinkEl = document.getElementById('hp-class-comp-entry-link');
-                const entryQrEl = document.getElementById('hp-class-comp-entry-qr');
-                if (entryLinkEl) entryLinkEl.href = entryUrl;
-                if (entryQrEl) entryQrEl.src = buildQrUrl(entryUrl);
-
                 if (contentEl && item.content) {
                     let u16 = null;
                     try {
@@ -316,13 +345,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const titleEl = document.getElementById('hp-class-work-title');
                 const contentEl = document.getElementById('hp-class-work-content');
                 const imgContainer = document.getElementById('hp-class-work-img-container');
-
-                // 「今すぐエントリー」ボタン＆QRコード（管理画面で編集可能。未設定時は既定URLのまま）
-                const entryUrl = item.entry_url || DEFAULT_WORK_ENTRY_URL;
-                const entryLinkEl = document.getElementById('hp-class-work-entry-link');
-                const entryQrEl = document.getElementById('hp-class-work-entry-qr');
-                if (entryLinkEl) entryLinkEl.href = entryUrl;
-                if (entryQrEl) entryQrEl.src = buildQrUrl(entryUrl);
 
                 if (titleEl && item.title) titleEl.textContent = item.title;
                 if (contentEl && item.content) {
@@ -429,13 +451,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         sponsorContainer.innerHTML = '<p style="text-align: center; color: var(--text-dim); padding: 20px;" class="glass">スポンサー情報は準備中です。</p>';
                     }
                 }
-            } else if (item.category === 'TERMS' && item.content) {
-                // 管理画面からアップロードされたPDFがあればフッターのリンク先を差し替える(未設定なら元のdocs内PDFのまま)
-                const el = document.getElementById('footer-terms-link');
-                if (el) el.href = dataUrlToBlobUrl(item.content);
-            } else if (item.category === 'PRIVACY_POLICY' && item.content) {
-                const el = document.getElementById('footer-privacy-link');
-                if (el) el.href = dataUrlToBlobUrl(item.content);
             } else if (item.category === 'TOOLS' && item.content) {
                 const toolsContainer = document.getElementById('hp-tools-container');
                 if (toolsContainer) {
@@ -470,8 +485,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        const byCategory = {};
+        fixedData.forEach(item => { byCategory[item.category] = item; });
+        applyEntryBlock('comp', DEFAULT_COMP_ENTRY_URL, byCategory['CLASS_COMP']);
+        applyEntryBlock('work', DEFAULT_WORK_ENTRY_URL, byCategory['CLASS_WORK']);
+        applyPolicyLinks(byCategory['TERMS'], byCategory['PRIVACY_POLICY']);
+        renderPdfImages();
+
     } catch (e) {
         console.error("Failed to load fixed content", e);
+        applyEntryBlock('comp', DEFAULT_COMP_ENTRY_URL, null);
+        applyEntryBlock('work', DEFAULT_WORK_ENTRY_URL, null);
     }
 });
 
@@ -517,13 +541,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let html = '';
 
+            // Poster image (ポスター画像) — カードの一番上に表示し、その下に詳細情報を並べる
+            if (item.poster_image) {
+                html += `<img src="${item.poster_image}" alt="${item.title} ポスター" style="width: 100%; max-width: 560px; display: block; margin: 0 auto 20px; border-radius: 12px; box-shadow: 0 4px 16px rgba(26, 123, 196, 0.12);">`;
+            }
+
             // Title
             html += `<h3 style="font-size: 1.3rem; color: var(--text-main); font-weight: 700; margin-bottom: 12px;">${item.title}</h3>`;
-
-            // Poster image (ポスター画像)
-            if (item.poster_image) {
-                html += `<img src="${item.poster_image}" alt="${item.title} ポスター" style="width: 100%; max-width: 480px; display: block; margin: 0 auto 15px; border-radius: 12px; box-shadow: 0 4px 16px rgba(26, 123, 196, 0.12);">`;
-            }
 
             // Event details grid
             let detailsHtml = '';
@@ -587,6 +611,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             container.appendChild(div);
             observer.observe(div);
         });
+        renderPdfImages(container);
 
     } catch (e) {
         container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">開催情報の読み込みに失敗しました。</p>';
@@ -683,6 +708,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             container.appendChild(div);
             observer.observe(div);
         });
+        renderPdfImages(container);
 
     } catch (e) {
         container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">過去の開催情報の読み込みに失敗しました。</p>';

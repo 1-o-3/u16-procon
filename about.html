@@ -81,8 +81,8 @@
                             </div>
                             <div id="hp-class-comp-more-link"></div>
 
-                            <!-- 競技部門エントリー導線（管理画面の「競技部門」から変更可能。未設定時はデフォルトURLを表示） -->
-                            <div class="entry-block">
+                            <!-- 競技部門エントリー導線（管理画面の「競技部門」から変更可能。未設定時はデフォルトURLを表示。管理画面で非表示にもできるため、設定を読み込むまでは隠しておく） -->
+                            <div class="entry-block" style="display: none;">
                                 <a id="hp-class-comp-entry-link" href="https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/entry" target="_blank" rel="noopener" class="btn-glow">今すぐエントリー</a>
                                 <div class="qr-box">
                                     <img id="hp-class-comp-entry-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https%3A%2F%2Fblockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev%2Fentry" alt="競技部門エントリー用QRコード" loading="lazy">
@@ -102,8 +102,8 @@
                                 <span>Coming Soon (Photo/Detail)</span>
                             </div>
 
-                            <!-- 作品部門エントリー導線（管理画面の「作品部門」から変更可能。未設定時はデフォルトURLを表示） -->
-                            <div class="entry-block">
+                            <!-- 作品部門エントリー導線（管理画面の「作品部門」から変更可能。未設定時はデフォルトURLを表示。管理画面で非表示にもできるため、設定を読み込むまでは隠しておく） -->
+                            <div class="entry-block" style="display: none;">
                                 <a id="hp-class-work-entry-link" href="https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/works" target="_blank" rel="noopener" class="btn-glow">今すぐエントリー</a>
                                 <div class="qr-box">
                                     <img id="hp-class-work-entry-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https%3A%2F%2Fblockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev%2Fworks" alt="作品部門エントリー用QRコード" loading="lazy">
@@ -133,11 +133,11 @@
             <div class="container">
                 <div class="footer-content">
                     <div class="footer-info">
-                        <div class="footer-section">
+                        <div class="footer-section" id="footer-links-section" style="display: none;">
                             <h4>LINKS</h4>
                             <ul>
-                                <li><a href="/docs/U-16 SHIZUOKA大会規約.pdf" target="_blank" id="footer-terms-link">大会規約</a></li>
-                                <li><a href="/docs/U-16 SHIZUOKA プライバシーポリシー.pdf" target="_blank" id="footer-privacy-link">プライバシーポリシー</a></li>
+                                <li style="display: none;"><a href="#" target="_blank" rel="noopener" id="footer-terms-link">大会規約</a></li>
+                                <li style="display: none;"><a href="#" target="_blank" rel="noopener" id="footer-privacy-link">プライバシーポリシー</a></li>
                             </ul>
                         </div>
                     </div>
@@ -150,6 +150,7 @@
         </footer>
     </div>
 
+    <script src="/image-utils.js"></script>
     <script src="/main.js"></script>
 </body>
 

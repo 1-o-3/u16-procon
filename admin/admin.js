@@ -21,6 +21,53 @@ function dataUrlToBlobUrl(dataUrl) {
     }
 }
 
+// 送信ボタンを処理中だけ無効化し、連打による二重送信を防ぐ。処理中にもう一度呼ばれても何もしない。
+async function runWithButtonLock(button, busyText, task) {
+    if (!button) return task();
+    if (button.disabled) return;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = busyText;
+    try {
+        return await task();
+    } finally {
+        button.disabled = false;
+        // 処理の中でボタン文言が変わった場合(「更新する」→「投稿する」等)はそちらを優先する
+        if (button.textContent === busyText) button.textContent = originalText;
+    }
+}
+
+// Vercelのサーバーレス関数はリクエスト本文が約4.5MBを超えると受け付けないため、送信前に確認する
+const MAX_REQUEST_BODY_LENGTH = 4.3 * 1024 * 1024;
+
+// 画像アップロード欄(PDF/JPEG/PNG)共通の処理。PDFは1ページ目を画像に変換してから onLoaded に渡す。
+function bindImageUpload(input, onLoaded) {
+    if (!input) return;
+    input.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        try {
+            const images = [];
+            for (const file of files) images.push(await readUploadAsImage(file));
+            onLoaded(images);
+        } catch (err) {
+            console.error(err);
+            alert(err.message || '画像の読み込みに失敗しました。');
+            e.target.value = '';
+        }
+    });
+}
+
+function showImagePreview(container, src, height = '100px') {
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.height = height;
+    img.style.borderRadius = '5px';
+    container.appendChild(img);
+    // 以前PDFのまま保存された画像も表示できるようにする
+    renderPdfImages(container);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Check login state (simple session storage)
     if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
@@ -94,7 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('add-new-btn').addEventListener('click', openAddModal);
     document.getElementById('cancel-btn').addEventListener('click', closeModal);
-    document.getElementById('qa-form').addEventListener('submit', handleFormSubmit);
+    document.getElementById('qa-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        runWithButtonLock(document.getElementById('qa-submit-btn'), '保存中...', () => handleFormSubmit(e));
+    });
 
     // News Event Listeners
     initNewsLogic();
@@ -291,11 +341,13 @@ function showNewsPreview() {
     const endTime = document.getElementById('news-end-time').value;
     const tentative = document.getElementById('news-is-tentative').checked;
 
-    let previewHTML = `<h2 style="color: var(--primary); margin-bottom: 10px;">${title}</h2>`;
-
+    // HPと同じく、ポスター画像を一番上に、その下に詳細情報を表示する
+    let previewHTML = '';
     if (currentPosterBase64) {
         previewHTML += `<img src="${currentPosterBase64}" style="width: 100%; max-width: 400px; display: block; margin: 0 auto 15px; border-radius: 12px;">`;
     }
+
+    previewHTML += `<h2 style="color: var(--primary); margin-bottom: 10px;">${title}</h2>`;
 
     if (tentative) {
         previewHTML += `<span style="background: #ff4b4b; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; margin-bottom: 15px; display: inline-block;">予定</span><br>`;
@@ -311,6 +363,7 @@ function showNewsPreview() {
     previewHTML += `<div style="white-space: pre-wrap; line-height: 1.6; margin-top: 20px;">${content}</div>`;
 
     document.getElementById('preview-container').innerHTML = previewHTML;
+    renderPdfImages(document.getElementById('preview-container'));
     document.getElementById('preview-modal').classList.add('active');
 }
 
@@ -336,6 +389,23 @@ function showFixedPreview() {
                 <div style="white-space: pre-wrap; line-height: 1.5; font-size: 0.85rem;">${u16Content}</div>
                 ${imgHtmlU16}
                 ${linkHtmlU16}
+            </div>
+        `;
+    } else if (category === 'CLASS_WORK') {
+        const workContent = document.getElementById('class-work-content').value || '';
+        const workLink = document.getElementById('class-work-link').value || '';
+        const workTitle = document.getElementById('fixed-title').value || '作品部門';
+
+        const imgHtml = currentClassWorkImage ? `<img src="${currentClassWorkImage}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-top: 10px;">` : '';
+        const linkHtml = workLink ? `<div style="margin-top: 12px;"><a href="${workLink}" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; border-width: 1.5px; display: inline-block;">もっと詳しく</a></div>` : '';
+
+        previewHTML = `
+            <h2 style="color: var(--primary); margin-bottom: 20px;">部門紹介 (作品部門) プレビュー</h2>
+            <div style="max-width: 400px; background: rgba(26, 123, 196, 0.05); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); text-align: left; color: var(--text-main);">
+                <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 8px; font-size: 0.95rem; line-height: 1.3;">🎨 ${workTitle}</h4>
+                <div style="white-space: pre-wrap; line-height: 1.5; font-size: 0.85rem;">${workContent}</div>
+                ${imgHtml}
+                ${linkHtml}
             </div>
         `;
     } else if (category === 'STAKEHOLDERS') {
@@ -400,6 +470,7 @@ function showFixedPreview() {
     }
     
     document.getElementById('preview-container').innerHTML = previewHTML;
+    renderPdfImages(document.getElementById('preview-container'));
     document.getElementById('preview-modal').classList.add('active');
 }
 
@@ -449,51 +520,25 @@ function initNewsLogic() {
         container.appendChild(input);
     });
 
-    document.getElementById('news-image-input').addEventListener('change', async (e) => {
-        const files = Array.from(e.target.files);
-        currentImagesBase64 = [];
+    bindImageUpload(document.getElementById('news-image-input'), (images) => {
+        const maxFiles = currentNewsCategory === '過去の開催情報' ? 5 : 1;
+        currentImagesBase64 = images.slice(0, maxFiles);
         const previewContainer = document.getElementById('image-preview-container');
         previewContainer.innerHTML = '';
-        
-        const maxFiles = currentNewsCategory === '過去の開催情報' ? 5 : 1;
-        for (let i = 0; i < Math.min(files.length, maxFiles); i++) {
-            const file = files[i];
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                currentImagesBase64.push(event.target.result);
-                const img = document.createElement('img');
-                img.src = event.target.result;
-                img.style.height = '60px';
-                img.style.borderRadius = '5px';
-                previewContainer.appendChild(img);
-            };
-            reader.readAsDataURL(file);
-        }
+        currentImagesBase64.forEach(src => showImagePreview(previewContainer, src, '60px'));
     });
 
-    document.getElementById('news-poster-input').addEventListener('change', (e) => {
-        const file = e.target.files[0];
+    bindImageUpload(document.getElementById('news-poster-input'), ([image]) => {
+        currentPosterBase64 = image;
         const previewContainer = document.getElementById('poster-preview-container');
-        if (!file) return;
-        if (file.size > 5 * 1024 * 1024) {
-            alert('画像サイズは最大5MBまでです。');
-            e.target.value = '';
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            currentPosterBase64 = event.target.result;
-            previewContainer.innerHTML = '';
-            const img = document.createElement('img');
-            img.src = currentPosterBase64;
-            img.style.height = '100px';
-            img.style.borderRadius = '5px';
-            previewContainer.appendChild(img);
-        };
-        reader.readAsDataURL(file);
+        previewContainer.innerHTML = '';
+        showImagePreview(previewContainer, image);
     });
 
-    document.getElementById('news-form').addEventListener('submit', handleNewsSubmit);
+    document.getElementById('news-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        runWithButtonLock(document.getElementById('news-submit-btn'), '送信中...', () => handleNewsSubmit(e));
+    });
     document.getElementById('news-cancel-btn').addEventListener('click', () => {
         document.getElementById('news-form').reset();
         currentImagesBase64 = [];
@@ -845,6 +890,11 @@ async function handleFormSubmit(e) {
             body: JSON.stringify(payload)
         });
 
+        if (response.status === 409) {
+            const errData = await response.json().catch(() => ({}));
+            alert(errData.error || '直前の登録と同じ内容のため、登録しませんでした。');
+            return;
+        }
         if (!response.ok) throw new Error('Failed to save data');
 
         await fetchQAData(); // Refresh list
@@ -994,24 +1044,12 @@ function openEditNews(id) {
     currentImagesBase64 = item.images || [];
     const previewContainer = document.getElementById('image-preview-container');
     previewContainer.innerHTML = '';
-    currentImagesBase64.forEach(src => {
-        const img = document.createElement('img');
-        img.src = src;
-        img.style.height = '60px';
-        img.style.borderRadius = '5px';
-        previewContainer.appendChild(img);
-    });
+    currentImagesBase64.forEach(src => showImagePreview(previewContainer, src, '60px'));
 
     currentPosterBase64 = item.poster_image || null;
     const posterPreviewContainer = document.getElementById('poster-preview-container');
     posterPreviewContainer.innerHTML = '';
-    if (currentPosterBase64) {
-        const posterImg = document.createElement('img');
-        posterImg.src = currentPosterBase64;
-        posterImg.style.height = '100px';
-        posterImg.style.borderRadius = '5px';
-        posterPreviewContainer.appendChild(posterImg);
-    }
+    if (currentPosterBase64) showImagePreview(posterPreviewContainer, currentPosterBase64);
 
     const commentsContainer = document.getElementById('comments-container');
     if (commentsContainer) {
@@ -1117,13 +1155,33 @@ async function handleNewsSubmit(e) {
         target_age, participants, divisions, images, poster_image, past_images, is_past, participant_comments
     };
 
+    // 同じ内容の連続投稿を防ぐ(サーバー側でも同じチェックを行う)
+    if (method === 'POST') {
+        const latest = newsData[0];
+        if (latest && latest.title === title && (latest.content || '') === (content || '')) {
+            alert('直前の投稿と同じ内容のため、投稿しませんでした。');
+            return;
+        }
+    }
+
+    const body = JSON.stringify(payload);
+    if (body.length > MAX_REQUEST_BODY_LENGTH) {
+        alert('画像の合計サイズが大きすぎるため送信できません。画像の枚数を減らすか、小さい画像を選択してください。');
+        return;
+    }
+
     try {
         const response = await fetch('/api/news', {
             method: method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body
         });
 
+        if (response.status === 409) {
+            const errData = await response.json().catch(() => ({}));
+            alert(errData.error || '直前の投稿と同じ内容のため、投稿しませんでした。');
+            return;
+        }
         if (!response.ok) throw new Error('Failed to save news data');
 
         document.getElementById('news-form').reset();
@@ -1155,7 +1213,8 @@ async function handleNewsSubmit(e) {
             if (index > -1) allNews[index] = { ...allNews[index], ...payload };
         }
         localStorage.setItem('mockNewsData', JSON.stringify(allNews));
-        
+        alert('DBへの保存に失敗したため、ブラウザ内に一時保存しました(公開サイトには反映されていません)。\n(' + (error.message || 'エラー') + ')');
+
         document.getElementById('news-form').reset();
         currentImagesBase64 = [];
         document.getElementById('image-preview-container').innerHTML = '';
@@ -1202,59 +1261,24 @@ async function deleteNews(id) {
 function initFixedLogic() {
     // カテゴリの切り替えはサイドメニュー(switchAdminSection)が担うため、ここでは不要
 
-    const fixedImageInput = document.getElementById('fixed-image-input');
-    if (fixedImageInput) {
-        fixedImageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('画像サイズは最大5MBまでです。');
-                    e.target.value = '';
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    currentFixedImageBase64 = e.target.result;
-                    const previewContainer = document.getElementById('fixed-image-preview');
-                    previewContainer.innerHTML = '';
-                    const img = document.createElement('img');
-                    img.src = currentFixedImageBase64;
-                    img.style.height = '100px';
-                    img.style.borderRadius = '5px';
-                    previewContainer.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
+    bindImageUpload(document.getElementById('class-comp-image-input-u16'), ([image]) => {
+        currentClassCompImageU16 = image;
+        const previewContainer = document.getElementById('class-comp-image-preview-u16');
+        previewContainer.innerHTML = '';
+        showImagePreview(previewContainer, image);
+    });
 
-    const imageInputU16 = document.getElementById('class-comp-image-input-u16');
-    if (imageInputU16) {
-        imageInputU16.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('画像サイズは最大5MBまでです。');
-                    e.target.value = '';
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    currentClassCompImageU16 = e.target.result;
-                    const previewContainer = document.getElementById('class-comp-image-preview-u16');
-                    previewContainer.innerHTML = '';
-                    const img = document.createElement('img');
-                    img.src = currentClassCompImageU16;
-                    img.style.height = '100px';
-                    img.style.borderRadius = '5px';
-                    previewContainer.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
+    bindImageUpload(document.getElementById('class-work-image-input'), ([image]) => {
+        currentClassWorkImage = image;
+        const previewContainer = document.getElementById('class-work-image-preview');
+        previewContainer.innerHTML = '';
+        showImagePreview(previewContainer, image);
+    });
 
-    document.getElementById('fixed-form').addEventListener('submit', handleFixedSubmit);
+    document.getElementById('fixed-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        runWithButtonLock(document.getElementById('fixed-submit-btn'), '保存中...', () => handleFixedSubmit(e));
+    });
 
     const addSnsBtn = document.getElementById('add-sns-account-btn');
     if (addSnsBtn) {
@@ -1267,244 +1291,159 @@ function initFixedLogic() {
     }
 }
 
-let currentFixedImageBase64 = null;
 let currentClassCompImageU16 = null;
+let currentClassWorkImage = null;
 
 function updateFixedFormVisibility() {
-    const isAbout = currentFixedCategory === 'ABOUT';
     const isSNS = currentFixedCategory === 'SNS';
     const isClassComp = currentFixedCategory === 'CLASS_COMP';
     const isClassWork = currentFixedCategory === 'CLASS_WORK';
     const isStakeholders = currentFixedCategory === 'STAKEHOLDERS';
     const isTools = currentFixedCategory === 'TOOLS';
-    
-    document.querySelector('.field-fixed-title').style.display = (isSNS || isStakeholders || isClassComp || isTools) ? 'none' : 'block';
-    document.querySelector('.field-fixed-content').style.display = (isSNS || isStakeholders || isClassComp || isTools) ? 'none' : 'block';
-    
-    document.querySelector('.field-fixed-image').style.display = isClassWork ? 'block' : 'none';
-    document.querySelector('.field-fixed-link').style.display = isClassWork ? 'block' : 'none';
-    document.querySelector('.field-fixed-entry-url').style.display = isClassWork ? 'block' : 'none';
-    
+    const usesGenericFields = !(isSNS || isStakeholders || isClassComp || isClassWork || isTools);
+
+    document.querySelector('.field-fixed-title').style.display = usesGenericFields ? 'block' : 'none';
+    document.querySelector('.field-fixed-content').style.display = usesGenericFields ? 'block' : 'none';
+
     document.querySelector('.field-fixed-sns').style.display = isSNS ? 'block' : 'none';
     document.querySelector('.field-fixed-stakeholders').style.display = isStakeholders ? 'block' : 'none';
     document.querySelector('.field-fixed-class-comp').style.display = isClassComp ? 'block' : 'none';
+    document.querySelector('.field-fixed-class-work').style.display = isClassWork ? 'block' : 'none';
     document.querySelector('.field-fixed-tools').style.display = isTools ? 'block' : 'none';
-    
-    if (isClassWork) {
-        document.getElementById('fixed-content-label').textContent = "詳細 (改行・HTMLが反映されます)";
-    } else {
-        document.getElementById('fixed-content-label').textContent = "本文 / 詳細 (改行・HTMLが反映されます)";
-    }
 }
 
-async function fetchFixedData() {
-    updateFixedFormVisibility();
-    const statusMsg = document.getElementById('fixed-status');
-    statusMsg.className = 'status-msg';
-    statusMsg.style.display = 'none';
-    
-    // Reset form first
-    document.getElementById('fixed-id').value = '';
-    document.getElementById('fixed-title').value = '';
-    document.getElementById('fixed-content').value = '';
-    document.getElementById('fixed-link').value = '';
-    // データが1件も無い(=セットアップ前)場合でも、HPの表示と差異が出ないよう既定URLを出しておく
-    document.getElementById('fixed-entry-url').value = DEFAULT_WORK_ENTRY_URL;
-    document.getElementById('class-comp-entry-url-u16').value = DEFAULT_COMP_ENTRY_URL;
-
-    // Reset CLASS_COMP specific fields
-    const classCompFields = ['class-comp-content-u16', 'class-comp-link-u16'];
-    classCompFields.forEach(id => {
+function resetFixedForm() {
+    ['fixed-id', 'fixed-title', 'fixed-content',
+     'class-comp-content-u16', 'class-comp-link-u16', 'class-comp-image-input-u16',
+     'class-work-content', 'class-work-link', 'class-work-image-input'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    const classCompPreviews = ['class-comp-image-preview-u16'];
-    classCompPreviews.forEach(id => {
+    ['class-comp-image-preview-u16', 'class-work-image-preview', 'sns-accounts-list', 'tools-list'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '';
     });
-    const classCompInputs = ['class-comp-image-input-u16'];
-    classCompInputs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-    currentClassCompImageU16 = null;
-
-    // Clear SNS accounts list
-    const snsList = document.getElementById('sns-accounts-list');
-    if (snsList) snsList.innerHTML = '';
-    
-    // Clear tools list
-    const toolsList = document.getElementById('tools-list');
-    if (toolsList) toolsList.innerHTML = '';
-    
-    // Clear stakeholder lists
     ['主催', '共催', '協賛', '後援'].forEach(type => {
         const el = document.getElementById(`stakeholder-list-${type}`);
         if (el) el.innerHTML = '';
     });
-    
-    currentFixedImageBase64 = null;
-    document.getElementById('fixed-image-preview').innerHTML = '';
-    document.getElementById('fixed-image-input').value = '';
-    
-    try {
-        const response = await fetch(`/api/fixed?category=${encodeURIComponent(currentFixedCategory)}`);
-        if (!response.ok) throw new Error('Failed to fetch fixed content');
-        const data = await response.json();
-        
-        if (data) {
-            document.getElementById('fixed-id').value = data.id || '';
-            document.getElementById('fixed-title').value = data.title || '';
-            document.getElementById('fixed-content').value = data.content || '';
-            document.getElementById('fixed-link').value = data.link || '';
-            // 未編集(entry_url未設定)なら、現在HPに表示されている既定URLを編集前情報として出す(HPとの差異を防ぐ)
-            document.getElementById('fixed-entry-url').value = data.entry_url || DEFAULT_WORK_ENTRY_URL;
 
-            if (data.image) {
-                currentFixedImageBase64 = data.image;
-                const img = document.createElement('img');
-                img.src = data.image;
-                img.style.height = '100px';
-                img.style.borderRadius = '5px';
-                document.getElementById('fixed-image-preview').appendChild(img);
-            }
+    // データが1件も無い(=セットアップ前)場合でも、HPの表示と差異が出ないよう既定URL・表示ONを出しておく
+    document.getElementById('class-comp-entry-url-u16').value = DEFAULT_COMP_ENTRY_URL;
+    document.getElementById('class-work-entry-url').value = DEFAULT_WORK_ENTRY_URL;
+    document.getElementById('class-comp-entry-enabled').checked = true;
+    document.getElementById('class-work-entry-enabled').checked = true;
 
-            if (data.sns_data) {
-                let sns = data.sns_data;
-                if (typeof sns === 'string') sns = JSON.parse(sns);
-                // sns_data is now an array of { service, id, link, comment }
-                const accounts = Array.isArray(sns) ? sns : legacySnsToArray(sns);
-                accounts.forEach(acc => addSnsAccountCard(acc));
-            }
+    currentClassCompImageU16 = null;
+    currentClassWorkImage = null;
+}
 
-            // For CLASS_COMP, content holds JSON array of [{content, image, link}, ...] (U-16のみ使用。旧データにO-16分の2要素目が残っていても無視する)
-            if (currentFixedCategory === 'CLASS_COMP' && data.content) {
-                try {
-                    const parsed = JSON.parse(data.content);
-                    if (Array.isArray(parsed) && parsed.length >= 1) {
-                        const u16 = parsed[0];
+// 取得した固定コンテンツ1件をフォームに反映する(DB取得時・ローカル保存フォールバック時の共通処理)
+function populateFixedForm(category, data) {
+    document.getElementById('fixed-id').value = data.id || '';
+    document.getElementById('fixed-title').value = data.title || '';
+    document.getElementById('fixed-content').value = data.content || '';
 
-                        document.getElementById('class-comp-content-u16').value = u16.content || '';
-                        document.getElementById('class-comp-link-u16').value = u16.link || '';
-                        document.getElementById('class-comp-entry-url-u16').value = data.entry_url || DEFAULT_COMP_ENTRY_URL;
-                        if (u16.image) {
-                            currentClassCompImageU16 = u16.image;
-                            const img = document.createElement('img');
-                            img.src = u16.image;
-                            img.style.height = '100px';
-                            img.style.borderRadius = '5px';
-                            document.getElementById('class-comp-image-preview-u16').appendChild(img);
-                        }
+    if (data.sns_data) {
+        let sns = data.sns_data;
+        if (typeof sns === 'string') sns = JSON.parse(sns);
+        // sns_data is now an array of { service, id, link, comment }
+        const accounts = Array.isArray(sns) ? sns : legacySnsToArray(sns);
+        accounts.forEach(acc => addSnsAccountCard(acc));
+    }
+
+    // For CLASS_COMP, content holds JSON array of [{content, image, link}, ...] (U-16のみ使用。旧データにO-16分の2要素目が残っていても無視する)
+    if (category === 'CLASS_COMP') {
+        // 未編集(entry_url未設定)なら、現在HPに表示されている既定URLを編集前情報として出す(HPとの差異を防ぐ)
+        document.getElementById('class-comp-entry-url-u16').value = data.entry_url || DEFAULT_COMP_ENTRY_URL;
+        document.getElementById('class-comp-entry-enabled').checked = data.entry_enabled !== false;
+        if (data.content) {
+            try {
+                const parsed = JSON.parse(data.content);
+                if (Array.isArray(parsed) && parsed.length >= 1) {
+                    const u16 = parsed[0];
+                    document.getElementById('class-comp-content-u16').value = u16.content || '';
+                    document.getElementById('class-comp-link-u16').value = u16.link || '';
+                    if (u16.image) {
+                        currentClassCompImageU16 = u16.image;
+                        showImagePreview(document.getElementById('class-comp-image-preview-u16'), u16.image);
                     }
-                } catch(e) {
-                    console.error("Failed to parse CLASS_COMP json", e);
                 }
-            }
-
-            // Stakeholders: stored as JSON in content field
-            if (currentFixedCategory === 'STAKEHOLDERS' && data.content) {
-                let stakeholders = data.content;
-                if (typeof stakeholders === 'string') {
-                    try { stakeholders = JSON.parse(stakeholders); } catch(e) { stakeholders = []; }
-                }
-                if (Array.isArray(stakeholders)) {
-                    stakeholders.forEach(s => addStakeholderCard(s.type, s));
-                }
-            }
-
-            // TOOLS: stored as JSON in content field
-            if (currentFixedCategory === 'TOOLS' && data.content) {
-                try {
-                    const tools = JSON.parse(data.content);
-                    if (Array.isArray(tools)) {
-                        tools.forEach(tool => addToolCard(tool));
-                    }
-                } catch(e) {
-                    console.error("Failed to parse tools json", e);
-                }
+            } catch (e) {
+                console.error("Failed to parse CLASS_COMP json", e);
             }
         }
+    }
+
+    // CLASS_WORK は title/content/image/link をそのまま使う(フラットな形式)
+    if (category === 'CLASS_WORK') {
+        document.getElementById('class-work-entry-url').value = data.entry_url || DEFAULT_WORK_ENTRY_URL;
+        document.getElementById('class-work-entry-enabled').checked = data.entry_enabled !== false;
+        document.getElementById('class-work-content').value = data.content || '';
+        document.getElementById('class-work-link').value = data.link || '';
+        if (data.image) {
+            currentClassWorkImage = data.image;
+            showImagePreview(document.getElementById('class-work-image-preview'), data.image);
+        }
+    }
+
+    // Stakeholders: stored as JSON in content field
+    if (category === 'STAKEHOLDERS' && data.content) {
+        let stakeholders = data.content;
+        if (typeof stakeholders === 'string') {
+            try { stakeholders = JSON.parse(stakeholders); } catch(e) { stakeholders = []; }
+        }
+        if (Array.isArray(stakeholders)) {
+            stakeholders.forEach(s => addStakeholderCard(s.type, s));
+        }
+    }
+
+    // TOOLS: stored as JSON in content field
+    if (category === 'TOOLS' && data.content) {
+        try {
+            const tools = JSON.parse(data.content);
+            if (Array.isArray(tools)) {
+                tools.forEach(tool => addToolCard(tool));
+            }
+        } catch(e) {
+            console.error("Failed to parse tools json", e);
+        }
+    }
+}
+
+let fixedFetchSeq = 0;
+
+async function fetchFixedData() {
+    // 取得中に別の項目へ切り替えられた場合、古い取得結果で新しい項目のフォームを上書きしないよう、最新の取得だけを反映する
+    // (以前はこれが原因で、競技部門の内容がABOUTのフォームに入り、そのまま保存されてしまうことがあった)
+    const requestId = ++fixedFetchSeq;
+    const category = currentFixedCategory;
+
+    updateFixedFormVisibility();
+    const statusMsg = document.getElementById('fixed-status');
+    statusMsg.className = 'status-msg';
+    statusMsg.style.display = 'none';
+
+    resetFixedForm();
+
+    let data = null;
+    try {
+        const response = await fetch(`/api/fixed?category=${encodeURIComponent(category)}`);
+        if (!response.ok) throw new Error('Failed to fetch fixed content');
+        data = await response.json();
     } catch (error) {
         console.error(error);
-
         // --- Fallback for local demo ONLY ---
         try {
             const localFixed = JSON.parse(localStorage.getItem('mockFixedData') || '[]');
-            const data = localFixed.find(f => f.category === currentFixedCategory);
-            if (data) {
-                document.getElementById('fixed-id').value = data.id || '';
-                document.getElementById('fixed-title').value = data.title || '';
-                document.getElementById('fixed-content').value = data.content || '';
-                document.getElementById('fixed-link').value = data.link || '';
-                document.getElementById('fixed-entry-url').value = data.entry_url || DEFAULT_WORK_ENTRY_URL;
-
-                if (data.image) {
-                    currentFixedImageBase64 = data.image;
-                    const img = document.createElement('img');
-                    img.src = data.image;
-                    img.style.height = '100px';
-                    img.style.borderRadius = '5px';
-                    document.getElementById('fixed-image-preview').appendChild(img);
-                }
-
-                if (data.sns_data) {
-                    let sns = data.sns_data;
-                    if (typeof sns === 'string') sns = JSON.parse(sns);
-                    const accounts = Array.isArray(sns) ? sns : legacySnsToArray(sns);
-                    accounts.forEach(acc => addSnsAccountCard(acc));
-                }
-
-                // For CLASS_COMP fallback (U-16のみ)
-                if (currentFixedCategory === 'CLASS_COMP' && data.content) {
-                    try {
-                        const parsed = JSON.parse(data.content);
-                        if (Array.isArray(parsed) && parsed.length >= 1) {
-                            const u16 = parsed[0];
-
-                            document.getElementById('class-comp-content-u16').value = u16.content || '';
-                            document.getElementById('class-comp-link-u16').value = u16.link || '';
-                            document.getElementById('class-comp-entry-url-u16').value = data.entry_url || DEFAULT_COMP_ENTRY_URL;
-                            if (u16.image) {
-                                currentClassCompImageU16 = u16.image;
-                                const img = document.createElement('img');
-                                img.src = u16.image;
-                                img.style.height = '100px';
-                                img.style.borderRadius = '5px';
-                                document.getElementById('class-comp-image-preview-u16').appendChild(img);
-                            }
-                        }
-                    } catch(e) {
-                        console.error("Failed to parse CLASS_COMP fallback json", e);
-                    }
-                }
-
-                if (currentFixedCategory === 'STAKEHOLDERS' && data.content) {
-                    let stakeholders = data.content;
-                    if (typeof stakeholders === 'string') {
-                        try { stakeholders = JSON.parse(stakeholders); } catch(e) { stakeholders = []; }
-                    }
-                    if (Array.isArray(stakeholders)) {
-                        stakeholders.forEach(s => addStakeholderCard(s.type, s));
-                    }
-                }
-                
-                // TOOLS fallback
-                if (currentFixedCategory === 'TOOLS' && data.content) {
-                    try {
-                        const tools = JSON.parse(data.content);
-                        if (Array.isArray(tools)) {
-                            tools.forEach(tool => addToolCard(tool));
-                        }
-                    } catch(e) {
-                        console.error("Failed to parse tools fallback json", e);
-                    }
-                }
-            }
-        } catch(e) {
+            data = localFixed.find(f => f.category === category) || null;
+        } catch (e) {
             console.error("Local storage fixed content load failed", e);
         }
     }
+
+    if (requestId !== fixedFetchSeq) return;
+    if (data) populateFixedForm(category, data);
 }
 
 // Convert old {insta:{}, x:{}, youtube:{}} format to new array format
@@ -1670,7 +1609,7 @@ function addStakeholderCard(type, data = {}) {
     const logoDiv = document.createElement('div');
     const logoLabel = document.createElement('label');
     logoLabel.style.cssText = 'display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);';
-    logoLabel.innerHTML = '企業・団体ロゴ <span style="font-size: 0.75rem;">(任意・5MBまで)</span>';
+    logoLabel.innerHTML = '企業・団体ロゴ <span style="font-size: 0.75rem;">(任意・PDF/JPEG/PNG・5MBまで)</span>';
     logoDiv.appendChild(logoLabel);
 
     const logoHiddenInput = document.createElement('input');
@@ -1695,26 +1634,15 @@ function addStakeholderCard(type, data = {}) {
 
     const logoFileInput = document.createElement('input');
     logoFileInput.type = 'file';
-    logoFileInput.accept = 'image/*';
+    logoFileInput.accept = 'application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png';
     logoFileInput.style.cssText = 'flex: 1; font-size: 0.85rem;';
-    logoFileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        if (file.size > 5 * 1024 * 1024) {
-            alert('画像サイズは最大5MBまでです。');
-            e.target.value = '';
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            logoHiddenInput.value = ev.target.result;
-            logoPreview.innerHTML = '';
-            const previewImg = document.createElement('img');
-            previewImg.src = ev.target.result;
-            previewImg.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
-            logoPreview.appendChild(previewImg);
-        };
-        reader.readAsDataURL(file);
+    bindImageUpload(logoFileInput, ([image]) => {
+        logoHiddenInput.value = image;
+        logoPreview.innerHTML = '';
+        const previewImg = document.createElement('img');
+        previewImg.src = image;
+        previewImg.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
+        logoPreview.appendChild(previewImg);
     });
     logoRow.appendChild(logoFileInput);
 
@@ -1781,6 +1709,7 @@ async function handleFixedSubmit(e) {
     let image = null;
     let content = null;
     let entry_url = null;
+    let entry_enabled = true;
 
     if (category === 'STAKEHOLDERS') {
         const stakeholders = getStakeholdersFromForm();
@@ -1804,14 +1733,18 @@ async function handleFixedSubmit(e) {
         };
         content = JSON.stringify([u16]);
         entry_url = document.getElementById('class-comp-entry-url-u16').value.trim() || null;
+        entry_enabled = document.getElementById('class-comp-entry-enabled').checked;
+    } else if (category === 'CLASS_WORK') {
+        // 見出しは入力欄を出していないため、読み込んだ値(非表示のfixed-title)をそのまま保持する
+        title = document.getElementById('fixed-title').value;
+        content = document.getElementById('class-work-content').value;
+        link = document.getElementById('class-work-link').value.trim();
+        image = currentClassWorkImage;
+        entry_url = document.getElementById('class-work-entry-url').value.trim() || null;
+        entry_enabled = document.getElementById('class-work-entry-enabled').checked;
     } else {
         title = document.getElementById('fixed-title').value;
         content = document.getElementById('fixed-content').value;
-        link = document.getElementById('fixed-link').value;
-        image = currentFixedImageBase64;
-        if (category === 'CLASS_WORK') {
-            entry_url = document.getElementById('fixed-entry-url').value.trim() || null;
-        }
     }
 
     const sns_data = getSnsAccountsFromForm();
@@ -1822,15 +1755,22 @@ async function handleFixedSubmit(e) {
         content,
         link,
         entry_url,
+        entry_enabled,
         image,
         sns_data
     };
+
+    const body = JSON.stringify(payload);
+    if (body.length > MAX_REQUEST_BODY_LENGTH) {
+        alert('画像の合計サイズが大きすぎるため保存できません。小さい画像を選択してください。');
+        return;
+    }
 
     try {
         const response = await fetch('/api/fixed', {
             method: 'POST', // The backend upserts
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body
         });
 
         if (!response.ok) {
@@ -1900,11 +1840,18 @@ function initPolicyLogic() {
         privacyInput.addEventListener('change', (e) => handlePolicyPdfSelect(e, 'privacy'));
     }
 
-    const termsBtn = document.getElementById('terms-submit-btn');
-    if (termsBtn) termsBtn.addEventListener('click', () => submitPolicyPdf('terms'));
+    ['terms', 'privacy'].forEach(kind => {
+        const submitBtn = document.getElementById(kind + '-submit-btn');
+        if (submitBtn) submitBtn.addEventListener('click', () => runWithButtonLock(submitBtn, 'アップロード中...', () => submitPolicyPdf(kind)));
 
-    const privacyBtn = document.getElementById('privacy-submit-btn');
-    if (privacyBtn) privacyBtn.addEventListener('click', () => submitPolicyPdf('privacy'));
+        const deleteBtn = document.getElementById(kind + '-delete-btn');
+        if (deleteBtn) deleteBtn.addEventListener('click', () => runWithButtonLock(deleteBtn, '削除中...', () => deletePolicyPdf(kind)));
+    });
+}
+
+function setPolicyDeleteButtonVisible(kind, visible) {
+    const btn = document.getElementById(kind + '-delete-btn');
+    if (btn) btn.style.display = visible ? 'inline-block' : 'none';
 }
 
 function handlePolicyPdfSelect(e, kind) {
@@ -1953,8 +1900,9 @@ async function fetchPolicyPdf(kind) {
             else currentPrivacyPdfBase64 = data.content;
 
             if (infoEl) {
-                infoEl.innerHTML = `<a href="${dataUrlToBlobUrl(data.content)}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">アップロード済み(${data.title || title})</span>`;
+                infoEl.innerHTML = `<a href="${dataUrlToBlobUrl(data.content)}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">アップロード済み(${data.title || title}) ― HPのフッターに表示中</span>`;
             }
+            setPolicyDeleteButtonVisible(kind, true);
         } else {
             showLocalPolicyPdfFallback(kind, category, title, infoEl);
         }
@@ -1977,6 +1925,7 @@ function showLocalPolicyPdfFallback(kind, category, title, infoEl) {
             if (infoEl) {
                 infoEl.innerHTML = `<a href="${dataUrlToBlobUrl(localEntry.content)}" target="_blank" rel="noopener" class="btn-outline" style="padding: 8px 16px; font-size: 0.85rem; display: inline-block;">現在のPDFを開く</a> <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 10px;">ブラウザ内に一時保存済み(${localEntry.title || title})</span>`;
             }
+            setPolicyDeleteButtonVisible(kind, true);
             return;
         }
     } catch (e) { /* ignore */ }
@@ -1984,14 +1933,16 @@ function showLocalPolicyPdfFallback(kind, category, title, infoEl) {
     if (kind === 'terms') currentTermsPdfBase64 = null;
     else currentPrivacyPdfBase64 = null;
     if (infoEl) {
-        infoEl.innerHTML = `<span style="color: var(--text-dim);">まだアップロードされていません。未アップロードの間、公開サイトは既存の docs フォルダ内のPDFを表示します。</span>`;
+        infoEl.innerHTML = `<span style="color: var(--text-dim);">まだアップロードされていません。未アップロードの間、公開サイトには「${title}」のリンク自体が表示されません。</span>`;
     }
+    setPolicyDeleteButtonVisible(kind, false);
 }
 
 async function submitPolicyPdf(kind) {
     const { category, title } = POLICY_CONFIG[kind];
     const base64 = kind === 'terms' ? currentTermsPdfBase64 : currentPrivacyPdfBase64;
     const statusEl = document.getElementById(kind + '-status');
+    if (statusEl) statusEl.style.display = ''; // 前回メッセージを自動で隠した際のdisplay:noneを解除
 
     const inputEl = document.getElementById(kind + '-pdf-input');
     if (!base64 || !(inputEl && inputEl.value)) {
@@ -2029,4 +1980,45 @@ async function submitPolicyPdf(kind) {
         }
         await fetchPolicyPdf(kind);
     }
+}
+
+// アップロード取り消し(削除)。削除するとHPのフッターからリンクが消える。
+async function deletePolicyPdf(kind) {
+    const { category, title } = POLICY_CONFIG[kind];
+    if (!confirm(`「${title}」のPDFを削除しますか？
+削除すると、公開サイトのフッターから「${title}」のリンクが非表示になります。`)) return;
+
+    const statusEl = document.getElementById(kind + '-status');
+    if (statusEl) statusEl.style.display = ''; // 前回メッセージを自動で隠した際のdisplay:noneを解除
+    try {
+        const res = await fetch('/api/fixed', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || ('HTTP ' + res.status));
+        }
+        if (statusEl) {
+            statusEl.textContent = '削除しました。公開サイトのフッターからリンクが非表示になります。';
+            statusEl.className = 'status-msg success';
+        }
+    } catch (error) {
+        console.error(error);
+        if (statusEl) {
+            statusEl.textContent = 'DBからの削除に失敗しました。(' + (error.message || 'エラー') + ')';
+            statusEl.className = 'status-msg error';
+        }
+    }
+
+    // ブラウザ内の一時保存分(DB未接続時のフォールバック)も消しておく
+    try {
+        const localFixed = JSON.parse(localStorage.getItem('mockFixedData') || '[]');
+        localStorage.setItem('mockFixedData', JSON.stringify(localFixed.filter(f => f.category !== category)));
+    } catch (e) { /* ignore */ }
+
+    if (kind === 'terms') currentTermsPdfBase64 = null;
+    else currentPrivacyPdfBase64 = null;
+    await fetchPolicyPdf(kind);
 }

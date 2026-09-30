@@ -395,6 +395,91 @@
             line-height: 1.5;
         }
 
+        /* 送信処理中(二重送信防止のため無効化中)のボタン */
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* 「今すぐエントリー」表示切り替えスイッチ
+           (style.css の .form-group label { display: block } に負けないよう label.toggle-switch で指定) */
+        label.toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .toggle-switch input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: relative;
+            flex-shrink: 0;
+            width: 46px;
+            height: 26px;
+            border-radius: 13px;
+            background: #c8d3dc;
+            transition: background 0.2s ease;
+        }
+
+        .toggle-slider::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--primary);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::after {
+            transform: translateX(20px);
+        }
+
+        .toggle-switch input:focus-visible + .toggle-slider {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .toggle-state {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 10px;
+            background: #eef1f4;
+            color: var(--text-dim);
+        }
+
+        .toggle-state::before {
+            content: 'HPに非表示';
+        }
+
+        .toggle-switch input:checked ~ .toggle-state {
+            background: #e8f8f0;
+            color: #1a9e5c;
+        }
+
+        .toggle-switch input:checked ~ .toggle-state::before {
+            content: 'HPに表示中';
+        }
+
         @media (max-width: 900px) {
             .admin-shell {
                 flex-direction: column;
@@ -678,14 +763,14 @@
                             </div>
 
                             <div class="form-group field-poster" style="margin-bottom: 15px; text-align: left; display: none;">
-                                <label style="display: block; margin-bottom: 5px;">ポスター画像 <span style="font-size: 0.8rem; color: var(--text-dim);">※チラシ・告知ポスター等を1枚。最大5MB程度まで</span></label>
-                                <input type="file" id="news-poster-input" accept="image/*">
+                                <label for="news-poster-input" style="display: block; margin-bottom: 5px;">ポスター画像 <span style="font-size: 0.8rem; color: var(--text-dim);">※チラシ・告知ポスター等を1枚。PDF・JPEG・PNG / 最大5MBまで(PDFは1ページ目を画像にして掲載します)</span></label>
+                                <input type="file" id="news-poster-input" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png">
                                 <div id="poster-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
                             </div>
 
                             <div class="form-group field-image" style="margin-bottom: 15px; text-align: left; display: none;">
-                                <label id="news-image-label" style="display: block; margin-bottom: 5px;">画像投稿 <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
-                                <input type="file" id="news-image-input" accept="image/*">
+                                <label id="news-image-label" for="news-image-input" style="display: block; margin-bottom: 5px;">画像投稿 <span style="font-size: 0.8rem; color: var(--text-dim);">※PDF・JPEG・PNG / 最大5MBまで</span></label>
+                                <input type="file" id="news-image-input" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png">
                                 <div id="image-preview-container" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
                             </div>
 
@@ -736,23 +821,6 @@
                                 <textarea id="fixed-content" rows="10" placeholder="本文を入力"></textarea>
                             </div>
 
-                            <div class="form-group field-fixed-image" style="margin-bottom: 15px; text-align: left; display: none;">
-                                <label style="display: block; margin-bottom: 5px;">画像 (1枚) <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span></label>
-                                <input type="file" id="fixed-image-input" accept="image/*">
-                                <div id="fixed-image-preview" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
-                            </div>
-
-                            <div class="form-group field-fixed-entry-url" style="margin-bottom: 15px; text-align: left; display: none;">
-                                <label for="fixed-entry-url" style="display: block; margin-bottom: 5px; color: var(--primary); font-weight: 700;">🔗 「今すぐエントリー」ボタン＆QRコードのリンク先URL</label>
-                                <input type="url" id="fixed-entry-url" placeholder="https://example.com/entry">
-                                <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">ページ上部の「今すぐエントリー」ボタンとQRコードの両方に反映されます。</p>
-                            </div>
-
-                            <div class="form-group field-fixed-link" style="margin-bottom: 15px; text-align: left; display: none;">
-                                <label for="fixed-link" style="display: block; margin-bottom: 5px;">関連リンクURL</label>
-                                <input type="url" id="fixed-link" placeholder="https://example.com/...">
-                            </div>
-
                             <div class="form-group field-fixed-class-comp" style="margin-bottom: 15px; text-align: left; display: none;">
                                 <p style="color: var(--text-dim); font-size: 0.95rem; margin-bottom: 20px;">📋 競技部門(U-16部門)の紹介記事を編集します。公開サイトではU-16部門のみを掲載しています。</p>
 
@@ -761,22 +829,63 @@
                                     <h4 style="color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid var(--primary-light); padding-bottom: 5px; font-size: 1.1rem; font-weight: 700;">👦 U-16部門 (16歳以下対象)</h4>
                                     <div style="display: flex; flex-direction: column; gap: 12px;">
                                         <div style="background: var(--primary-pale); padding: 12px; border-radius: 8px;">
-                                            <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--primary); font-weight: 700;">🔗 「今すぐエントリー」ボタン＆QRコードのリンク先URL</label>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="class-comp-entry-enabled" checked>
+                                                <span class="toggle-slider"></span>
+                                                「今すぐエントリー」ボタン＆QRコード
+                                                <span class="toggle-state"></span>
+                                            </label>
+                                            <label for="class-comp-entry-url-u16" style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--primary); font-weight: 700;">🔗 「今すぐエントリー」ボタン＆QRコードのリンク先URL</label>
                                             <input type="url" id="class-comp-entry-url-u16" placeholder="https://example.com/entry" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
-                                            <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">ページ上部の「今すぐエントリー」ボタンとQRコードの両方に反映されます。</p>
+                                            <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">「今すぐエントリー」ボタンとQRコードの両方に反映されます。会期外はスイッチをOFFにするとHPから非表示になります(URLは保持されます)。</p>
                                         </div>
                                         <div>
-                                            <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">詳細 (改行・HTMLが反映されます)</label>
+                                            <label for="class-comp-content-u16" style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">詳細 (改行・HTMLが反映されます)</label>
                                             <textarea id="class-comp-content-u16" rows="4" placeholder="U-16部門の詳細説明を入力" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;"></textarea>
                                         </div>
                                         <div>
-                                            <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">画像 (1枚) ※最大5MB程度まで</label>
-                                            <input type="file" id="class-comp-image-input-u16" accept="image/*" style="width: 100%; padding: 5px; border: 1px solid var(--primary-light); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); background: #ffffff;">
+                                            <label for="class-comp-image-input-u16" style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">画像 (1枚) ※PDF・JPEG・PNG / 最大5MBまで</label>
+                                            <input type="file" id="class-comp-image-input-u16" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" style="width: 100%; padding: 5px; border: 1px solid var(--primary-light); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); background: #ffffff;">
                                             <div id="class-comp-image-preview-u16" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
                                         </div>
                                         <div>
-                                            <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">関連リンクURL (「もっと詳しく」ボタン・任意)</label>
+                                            <label for="class-comp-link-u16" style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">関連リンクURL (「もっと詳しく」ボタン・任意)</label>
                                             <input type="url" id="class-comp-link-u16" placeholder="https://example.com/u16-details" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 作品部門 (競技部門と同じ並び: エントリー → 詳細 → 画像 → 関連リンク) -->
+                            <div class="form-group field-fixed-class-work" style="margin-bottom: 15px; text-align: left; display: none;">
+                                <p style="color: var(--text-dim); font-size: 0.95rem; margin-bottom: 20px;">📋 作品部門の紹介記事を編集します。</p>
+
+                                <div style="background: #ffffff; border: 2px solid var(--primary-light); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(26,123,196,0.06);">
+                                    <h4 style="color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid var(--primary-light); padding-bottom: 5px; font-size: 1.1rem; font-weight: 700;">🎨 作品部門</h4>
+                                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                                        <div style="background: var(--primary-pale); padding: 12px; border-radius: 8px;">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="class-work-entry-enabled" checked>
+                                                <span class="toggle-slider"></span>
+                                                「今すぐエントリー」ボタン＆QRコード
+                                                <span class="toggle-state"></span>
+                                            </label>
+                                            <label for="class-work-entry-url" style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--primary); font-weight: 700;">🔗 「今すぐエントリー」ボタン＆QRコードのリンク先URL</label>
+                                            <input type="url" id="class-work-entry-url" placeholder="https://example.com/entry" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
+                                            <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">「今すぐエントリー」ボタンとQRコードの両方に反映されます。会期外はスイッチをOFFにするとHPから非表示になります(URLは保持されます)。</p>
+                                        </div>
+                                        <div>
+                                            <label for="class-work-content" style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">詳細 (改行・HTMLが反映されます)</label>
+                                            <textarea id="class-work-content" rows="4" placeholder="作品部門の詳細説明を入力" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;"></textarea>
+                                        </div>
+                                        <div>
+                                            <label for="class-work-image-input" style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">画像 (1枚) ※PDF・JPEG・PNG / 最大5MBまで</label>
+                                            <input type="file" id="class-work-image-input" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" style="width: 100%; padding: 5px; border: 1px solid var(--primary-light); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); background: #ffffff;">
+                                            <div id="class-work-image-preview" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;"></div>
+                                        </div>
+                                        <div>
+                                            <label for="class-work-link" style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">関連リンクURL (「もっと詳しく」ボタン・任意)</label>
+                                            <input type="url" id="class-work-link" placeholder="https://example.com/works-details" style="width: 100%; padding: 10px; border: 1px solid var(--primary-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; color: var(--text-main); background: #ffffff;">
                                         </div>
                                     </div>
                                 </div>
@@ -852,17 +961,18 @@
                 <div id="panel-terms" class="admin-panel">
                     <div class="admin-panel-header">
                         <h2>大会規約 (PDF)</h2>
-                        <p>アップロードしたPDFが、サイトのフッターにある「大会規約」リンク先として公開されます。</p>
+                        <p>アップロードしたPDFが、サイトのフッターにある「大会規約」リンク先として公開されます。未アップロード(または取り消し)の間は、HPに「大会規約」のリンク自体が表示されません。</p>
                         <span class="admin-panel-target">共有情報：全ページのフッターに表示されます</span>
                     </div>
                     <div class="glass" style="margin-bottom: 30px;">
                         <div id="terms-current-info" style="margin-bottom: 20px; font-size: 0.9rem;">読み込み中...</div>
                         <div class="form-group" style="text-align: left;">
-                            <label style="display: block; margin-bottom: 5px;">PDFファイル <span style="font-size: 0.8rem; color: var(--text-dim);">※最大3MB程度まで</span></label>
+                            <label for="terms-pdf-input" style="display: block; margin-bottom: 5px;">PDFファイル <span style="font-size: 0.8rem; color: var(--text-dim);">※最大3MB程度まで</span></label>
                             <input type="file" id="terms-pdf-input" accept="application/pdf">
                         </div>
                         <div id="terms-status" class="status-msg"></div>
                         <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                            <button type="button" class="btn-outline" id="terms-delete-btn" style="display: none; margin-right: 10px; color: #d63031; border-color: rgba(214, 48, 49, 0.4);">アップロードを取り消す(削除)</button>
                             <button type="button" class="btn-glow" id="terms-submit-btn">アップロードして反映</button>
                         </div>
                     </div>
@@ -872,17 +982,18 @@
                 <div id="panel-privacy" class="admin-panel">
                     <div class="admin-panel-header">
                         <h2>プライバシーポリシー (PDF)</h2>
-                        <p>アップロードしたPDFが、サイトのフッターにある「プライバシーポリシー」リンク先として公開されます。</p>
+                        <p>アップロードしたPDFが、サイトのフッターにある「プライバシーポリシー」リンク先として公開されます。未アップロード(または取り消し)の間は、HPに「プライバシーポリシー」のリンク自体が表示されません。</p>
                         <span class="admin-panel-target">共有情報：全ページのフッターに表示されます</span>
                     </div>
                     <div class="glass" style="margin-bottom: 30px;">
                         <div id="privacy-current-info" style="margin-bottom: 20px; font-size: 0.9rem;">読み込み中...</div>
                         <div class="form-group" style="text-align: left;">
-                            <label style="display: block; margin-bottom: 5px;">PDFファイル <span style="font-size: 0.8rem; color: var(--text-dim);">※最大3MB程度まで</span></label>
+                            <label for="privacy-pdf-input" style="display: block; margin-bottom: 5px;">PDFファイル <span style="font-size: 0.8rem; color: var(--text-dim);">※最大3MB程度まで</span></label>
                             <input type="file" id="privacy-pdf-input" accept="application/pdf">
                         </div>
                         <div id="privacy-status" class="status-msg"></div>
                         <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                            <button type="button" class="btn-outline" id="privacy-delete-btn" style="display: none; margin-right: 10px; color: #d63031; border-color: rgba(214, 48, 49, 0.4);">アップロードを取り消す(削除)</button>
                             <button type="button" class="btn-glow" id="privacy-submit-btn">アップロードして反映</button>
                         </div>
                     </div>
@@ -922,7 +1033,7 @@
                     </div>
                     <div class="form-actions" style="margin-top: 30px;">
                         <button type="button" id="cancel-btn" class="btn-outline">キャンセル</button>
-                        <button type="submit" class="btn-glow">保存する</button>
+                        <button type="submit" class="btn-glow" id="qa-submit-btn">保存する</button>
                     </div>
                 </form>
             </div>
@@ -942,6 +1053,7 @@
 
     </div> <!-- Close admin-main-content wrapper -->
 
+    <script src="../image-utils.js"></script>
     <script src="admin.js"></script>
 </body>
 

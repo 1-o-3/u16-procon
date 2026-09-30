@@ -81,6 +81,7 @@ export default async function handler(request, response) {
             await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS link TEXT;`;
             await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS sns_data JSONB;`;
             await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS entry_url TEXT;`;
+            await sql`ALTER TABLE fixed_content_table ADD COLUMN IF NOT EXISTS entry_enabled BOOLEAN DEFAULT TRUE;`;
             await sql`ALTER TABLE fixed_content_table ALTER COLUMN content DROP NOT NULL;`;
         } catch(e) {
             console.error("Alter columns skipped or failed on fixed_content_table", e);

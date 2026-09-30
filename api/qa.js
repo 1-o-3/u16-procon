@@ -36,6 +36,12 @@ export default async function handler(request, response) {
             const { category, category_id, question, answer } = request.body;
             if (!question || !answer) throw new Error('Missing required fields');
 
+            // 直前の登録とまったく同じ内容の連続登録は受け付けない(ボタン連打などによる二重登録防止)
+            const latest = await sql`SELECT category, question, answer FROM qa_table ORDER BY created_at DESC, id DESC LIMIT 1;`;
+            if (latest.rowCount > 0 && latest.rows[0].category === category && latest.rows[0].question === question && latest.rows[0].answer === answer) {
+                return response.status(409).json({ error: '直前の登録と同じ内容のため、登録しませんでした。' });
+            }
+
             const { rows } = await sql`
                 INSERT INTO qa_table (category, category_id, question, answer)
                 VALUES (${category}, ${category_id}, ${question}, ${answer})
