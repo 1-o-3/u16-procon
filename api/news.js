@@ -78,6 +78,21 @@ export default async function handler(request, response) {
             const { category, title, content, start_date, start_time, end_time, location, map_url, overview_url, application_url, target_age, divisions, images, past_images, participant_comments, prefecture, participants, is_tentative, is_past, poster_image } = request.body;
             if (!category || !title) throw new Error('Missing required fields');
 
+            // 今期の開催情報は1件のみ(編集式)。HPに表示中の大会がある間は新規投稿を受け付けない
+            // (「今期」の判定は GET の今期の開催情報と同じ条件)
+            if (category === '今期の開催情報') {
+                const active = await sql`
+                    SELECT id FROM news_table
+                    WHERE category = '今期の開催情報'
+                      AND is_past = FALSE
+                      AND (start_date IS NULL OR start_date >= CURRENT_DATE)
+                    LIMIT 1;
+                `;
+                if (active.rowCount > 0) {
+                    return response.status(409).json({ error: '今期の開催情報は1件のみです。表示中の大会情報を編集してください。' });
+                }
+            }
+
             // 直前の投稿とまったく同じ内容(タイトル・本文)の連続投稿は受け付けない(ボタン連打などによる二重投稿防止)
             const latest = await sql`
                 SELECT title, content FROM news_table

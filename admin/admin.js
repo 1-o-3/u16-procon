@@ -190,7 +190,11 @@ function switchAdminSection(section) {
     if (cfg.newsCategory) {
         currentNewsCategory = cfg.newsCategory;
         const titleEl = document.getElementById('news-panel-title');
-        if (titleEl) titleEl.textContent = cfg.newsCategory === '過去の開催情報' ? '記事投稿 (過去の開催情報アーカイブ)' : '記事投稿 (' + cfg.newsCategory + ')';
+        if (titleEl) {
+            titleEl.textContent = cfg.newsCategory === '過去の開催情報' ? '記事投稿 (過去の開催情報アーカイブ)'
+                : cfg.newsCategory === '今期の開催情報' ? '今期の開催情報 (編集)'
+                : '記事投稿 (' + cfg.newsCategory + ')';
+        }
         const displayCat = document.getElementById('current-news-category');
         if (displayCat) displayCat.textContent = cfg.newsCategory;
         const listCat = document.getElementById('news-list-category');
@@ -239,6 +243,11 @@ const DEFAULT_COMP_ENTRY_URL = 'https://blockly-chaser-shizuoka-do.blockly-chase
 const DEFAULT_WORK_ENTRY_URL = 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/works';
 
 let subdivisionNames = ["U-16", "O-16"];
+
+// 会場名で検索するGoogleマップのURL(会場名が空なら空文字)。main.js側にも同じ関数がある
+function buildMapSearchUrl(location) {
+    return location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}` : '';
+}
 
 function extractSubdivisionsFromNews(newsList) {
     const found = new Set();
@@ -520,6 +529,36 @@ function initNewsLogic() {
         container.appendChild(input);
     });
 
+    // 「予定」のチェックで必須項目が変わる。保存ボタンを押した時点(ブラウザの入力チェックより前)にも必ず合わせ直す
+    document.getElementById('news-is-tentative').addEventListener('change', updateCurrentRequiredFields);
+    document.getElementById('news-submit-btn').addEventListener('click', updateCurrentRequiredFields);
+
+    // 日付・時刻は入力欄のどこをクリックしてもカレンダー/時刻選択が開くようにする(ボタンを狙わなくて済む)
+    document.querySelectorAll('input.compact-picker').forEach(input => {
+        input.addEventListener('click', () => {
+            try { input.showPicker(); } catch (e) { /* 未対応ブラウザでは通常の動作のまま */ }
+        });
+    });
+
+    // 会場名(開催地・施設名)からGoogleマップの検索リンクを作る
+    document.getElementById('news-map-from-location-btn').addEventListener('click', () => {
+        const location = document.getElementById('news-location').value.trim();
+        if (!location) {
+            alert('先に「開催地・施設名」を入力してください。');
+            return;
+        }
+        document.getElementById('news-map-url').value = buildMapSearchUrl(location);
+    });
+    document.getElementById('news-map-open-btn').addEventListener('click', () => {
+        const url = document.getElementById('news-map-url').value.trim()
+            || buildMapSearchUrl(document.getElementById('news-location').value.trim());
+        if (!url) {
+            alert('「開催地・施設名」またはGoogle MapのURLを入力してください。');
+            return;
+        }
+        window.open(url, '_blank', 'noopener');
+    });
+
     bindImageUpload(document.getElementById('news-image-input'), (images) => {
         const maxFiles = currentNewsCategory === '過去の開催情報' ? 5 : 1;
         currentImagesBase64 = images.slice(0, maxFiles);
@@ -602,6 +641,23 @@ function initNewsLogic() {
     // DBの部門一覧の読み込みは showAdminPanel() → refreshSubdivisions() が行う(ここでは既定の選択肢で描画しておく)
     renderSubdivisions(["競技部門 (U-16)"]);
     syncCompSubdivisions();
+}
+
+// 今期の開催情報は、「予定」にチェックが無い(=日程・会場が確定している)場合、
+// タイトル・開催日・開催地・対象年齢を必須にする。未入力だとブラウザの入力チェックで保存できない。
+function updateCurrentRequiredFields() {
+    const isCurrent = currentNewsCategory === '今期の開催情報';
+    const isConfirmed = isCurrent && !document.getElementById('news-is-tentative').checked;
+
+    ['news-start-date', 'news-location', 'news-target-age'].forEach(id => {
+        const input = document.getElementById(id);
+        input.required = isConfirmed;
+        const mark = document.querySelector(`label[for="${id}"] .required-mark`);
+        if (mark) mark.style.display = isConfirmed ? 'inline' : 'none';
+    });
+    // タイトルはどのカテゴリでも必須(HTMLのrequired)。今期の開催情報では必須マークも表示する
+    const titleMark = document.querySelector('label[for="news-title"] .required-mark');
+    if (titleMark) titleMark.style.display = isCurrent ? 'inline' : 'none';
 }
 
 function syncCompSubdivisions() {
@@ -756,6 +812,8 @@ function updateNewsFormVisibility(category) {
         s('#news-form-title').display = 'block';
         s('#past-notice-msg').display = 'none';
     }
+
+    updateCurrentRequiredFields();
 }
 
 async function fetchQAData() {
@@ -975,8 +1033,49 @@ async function fetchNewsData() {
         if (savedData) {
             allNews = JSON.parse(savedData);
         }
-        newsData = allNews.filter(n => n.category === currentNewsCategory);
+        newsData = allNews.filter(n => n.category === currentNewsCategory && !n.is_past);
         renderNewsTable(newsData);
+    }
+    applySingleCurrentMode();
+}
+
+// 今期の開催情報は常に1件だけ。一覧から選んで編集するのではなく、HPに表示中の1件を最初からフォームに読み込んで編集する。
+// 1件も無いときだけ新規投稿になる(大会終了後に「過去の開催情報」へアーカイブすると、次の大会を登録できる)。
+const SINGLE_NEWS_CATEGORY = '今期の開催情報';
+
+function applySingleCurrentMode() {
+    const isSingle = currentNewsCategory === SINGLE_NEWS_CATEGORY;
+    const msg = document.getElementById('news-single-msg');
+    const extras = document.getElementById('news-current-extras');
+    document.getElementById('news-list-section').style.display = isSingle ? 'none' : 'block';
+    msg.style.display = isSingle ? 'block' : 'none';
+    extras.innerHTML = '';
+    if (!isSingle) return;
+
+    // APIは新しい順に返す。先頭がHPに表示中の1件、残りは以前の重複投稿
+    const [current, ...leftovers] = newsData;
+    if (current) {
+        openEditNews(current.id, { scroll: false });
+        document.getElementById('news-cancel-btn').style.display = 'none';
+        msg.textContent = '✏️ HPに表示中の大会情報を編集します。内容を変更して「更新する」を押してください。(今期の開催情報は1件のみです。大会終了後に「過去の開催情報」からアーカイブすると、次の大会を登録できます)';
+    } else {
+        msg.textContent = '📝 今期の大会情報はまだ登録されていません。入力して「投稿する」を押すとHPに表示されます。';
+    }
+    document.getElementById('news-form-title').style.display = 'none';
+
+    if (leftovers.length > 0) {
+        extras.innerHTML = `
+            <div style="background: #fff8e6; border: 1px solid #ffd98a; border-radius: 10px; padding: 15px; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-main);">
+                <p style="font-weight: 700; margin-bottom: 8px;">⚠️ 以前の重複投稿が${leftovers.length}件残っています(HPには表示されません)。不要であれば削除してください。</p>
+                ${leftovers.map(item => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px dashed #ffd98a;">
+                        <span>ID ${item.id}：${item.title} <span style="color: var(--text-dim);">(${new Date(item.created_at).toLocaleString('ja-JP')} 投稿)</span></span>
+                        <button type="button" class="action-btn delete" data-leftover-id="${item.id}">削除</button>
+                    </div>`).join('')}
+            </div>`;
+        extras.querySelectorAll('[data-leftover-id]').forEach(btn => {
+            btn.addEventListener('click', () => deleteNews(btn.dataset.leftoverId));
+        });
     }
 }
 
@@ -1015,7 +1114,7 @@ function renderNewsTable(data) {
     });
 }
 
-function openEditNews(id) {
+function openEditNews(id, { scroll = true } = {}) {
     const item = newsData.find(n => String(n.id) === String(id));
     if (!item) return;
 
@@ -1028,6 +1127,7 @@ function openEditNews(id) {
     document.getElementById('news-start-time').value = item.start_time || '';
     document.getElementById('news-end-time').value = item.end_time || '';
     document.getElementById('news-is-tentative').checked = item.is_tentative || false;
+    updateCurrentRequiredFields();
     document.getElementById('news-location').value = item.location || '';
     document.getElementById('news-map-url').value = item.map_url || '';
     document.getElementById('news-application-url').value = item.application_url || '';
@@ -1090,7 +1190,7 @@ function openEditNews(id) {
     document.getElementById('past-notice-msg').style.display = 'none';
     
     // Scroll to form smoothly
-    document.getElementById('news-form').scrollIntoView({ behavior: 'smooth' });
+    if (scroll) document.getElementById('news-form').scrollIntoView({ behavior: 'smooth' });
 }
 
 async function handleNewsSubmit(e) {
@@ -1106,7 +1206,8 @@ async function handleNewsSubmit(e) {
     let end_time = document.getElementById('news-end-time').value || null;
     let is_tentative = document.getElementById('news-is-tentative').checked;
     let location = document.getElementById('news-location').value || null;
-    let map_url = document.getElementById('news-map-url').value || null;
+    // Google MapのURLが空欄なら、会場名で検索するリンクを自動で設定する
+    let map_url = document.getElementById('news-map-url').value.trim() || buildMapSearchUrl(location) || null;
     let application_url = document.getElementById('news-application-url').value || null;
     let overview_url = document.getElementById('news-overview-url').value || null;
     const prefecture = document.getElementById('news-prefecture').value || null;
@@ -1166,6 +1267,10 @@ async function handleNewsSubmit(e) {
 
     // 同じ内容の連続投稿を防ぐ(サーバー側でも同じチェックを行う)
     if (method === 'POST') {
+        if (category === SINGLE_NEWS_CATEGORY && newsData.length > 0) {
+            alert('今期の開催情報は1件のみです。表示中の大会情報を編集してください。');
+            return;
+        }
         const latest = newsData[0];
         if (latest && latest.title === title && (latest.content || '') === (content || '')) {
             alert('直前の投稿と同じ内容のため、投稿しませんでした。');

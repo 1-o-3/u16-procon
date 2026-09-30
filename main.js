@@ -3,6 +3,11 @@
 const DEFAULT_COMP_ENTRY_URL = 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/entry';
 const DEFAULT_WORK_ENTRY_URL = 'https://blockly-chaser-shizuoka-do.blockly-chaser-shizuoka-do.workers.dev/works';
 
+// 会場名で検索するGoogleマップのURL(管理画面でURL未設定のまま保存された記事用)。admin.js側にも同じ関数がある
+function buildMapSearchUrl(location) {
+    return location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}` : '';
+}
+
 function buildQrUrl(targetUrl) {
     return `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(targetUrl)}`;
 }
@@ -252,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     html += `<div><strong style="color: var(--secondary);">開催日:</strong> ${new Date(item.start_date).toLocaleDateString('ja-JP')} ${item.start_time || ''} ${item.end_time ? '〜 ' + item.end_time : ''} ${item.is_tentative ? '(予定)' : ''}</div>`;
                 }
                 if (item.location) {
-                    html += `<div><strong style="color: var(--secondary);">場所:</strong> ${item.map_url ? `<a href="${item.map_url}" target="_blank" style="color: var(--primary);">${item.location}</a>` : item.location}</div>`;
+                    html += `<div><strong style="color: var(--secondary);">場所:</strong> <a href="${item.map_url || buildMapSearchUrl(item.location)}" target="_blank" rel="noopener" style="color: var(--primary);">${item.location}</a></div>`;
                 }
                 if (item.target_age) {
                     html += `<div><strong style="color: var(--secondary);">対象:</strong> ${item.target_age}</div>`;
@@ -534,7 +539,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         container.innerHTML = '';
-        data.forEach(item => {
+        // 今期の開催情報は1件のみ掲載する(APIは新しい順なので先頭が最新。以前の重複投稿が残っていても表示しない)
+        data.slice(0, 1).forEach(item => {
             // 1大会ごとに「ポスター(枠なし)」と「詳細情報のカード」を別々に縦に並べる
             const eventEl = document.createElement('div');
             eventEl.className = 'reveal-on-scroll';
@@ -567,9 +573,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">📅 日時</span><span style="color: var(--text-main);">${dateStr}${timeStr}${endStr}${tentStr}</span></div>`;
             }
             if (item.location) {
-                const locHtml = item.map_url
-                    ? `<a href="${item.map_url}" target="_blank" style="color: var(--primary); text-decoration: underline;">${item.location}</a>`
-                    : item.location;
+                const locHtml = `<a href="${item.map_url || buildMapSearchUrl(item.location)}" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline;">${item.location}</a>`;
                 detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">📍 会場</span><span style="color: var(--text-main);">${locHtml}</span></div>`;
             }
             if (item.target_age) {
