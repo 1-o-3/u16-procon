@@ -436,14 +436,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <h3 class="sponsor-group-title">${type}</h3>
                                 <div class="sponsor-grid">
                                     ${groups[type].map(s => {
+                                        const nameHtml = s.url
+                                            ? `<a href="${s.url}" target="_blank" rel="noopener">${s.name}</a>`
+                                            : `<span class="sponsor-name">${s.name}</span>`;
+                                        // ロゴは協賛のみ表示する(主催・共催・後援は名称のみ)
+                                        if (type !== '協賛') {
+                                            return `<div class="sponsor-card sponsor-card-name-only glass">${nameHtml}</div>`;
+                                        }
                                         // ロゴサイズ:「大」(size:large)は正方形枠、「中」(既定値)は幅同じ・高さ半分の枠
                                         const sizeClass = s.size === 'large' ? '' : 'size-medium';
                                         const logoHtml = s.logo
                                             ? `<div class="sponsor-logo-frame ${sizeClass}"><img src="${s.logo}" alt="${s.name}"></div>`
                                             : `<div class="sponsor-logo-frame ${sizeClass} sponsor-logo-placeholder">${(s.name || '?').charAt(0)}</div>`;
-                                        const nameHtml = s.url
-                                            ? `<a href="${s.url}" target="_blank" rel="noopener">${s.name}</a>`
-                                            : `<span class="sponsor-name">${s.name}</span>`;
                                         return `<div class="sponsor-card glass">${logoHtml}${nameHtml}</div>`;
                                     }).join('')}
                                 </div>

@@ -432,6 +432,11 @@ function showFixedPreview() {
                 previewHTML += `<h4 style="color: var(--primary); margin: 15px 0 10px;">${type}</h4>`;
                 previewHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; margin-bottom: 10px;">`;
                 groups[type].forEach(s => {
+                    if (type !== '協賛') {
+                        // HPと同じく、協賛以外は名称のみ
+                        previewHTML += `<div style="text-align: center; background: white; border: 1px solid var(--glass-border); border-radius: 10px; padding: 14px 8px; font-size: 0.85rem; color: var(--text-main); font-weight: 600;">${s.name}</div>`;
+                        return;
+                    }
                     const frameHeight = s.size === 'large' ? '120px' : '60px';
                     const logoHtml = s.logo
                         ? `<img src="${s.logo}" style="max-width: 100%; max-height: 100%; object-fit: contain;">`
@@ -1719,66 +1724,69 @@ function addStakeholderCard(type, data = {}) {
     urlDiv.appendChild(urlInput);
     wrapper.appendChild(urlDiv);
 
-    // Logo field (企業アイコン)
-    const logoDiv = document.createElement('div');
-    const logoLabel = document.createElement('label');
-    logoLabel.style.cssText = 'display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);';
-    logoLabel.innerHTML = '企業・団体ロゴ <span style="font-size: 0.75rem;">(任意・PDF/JPEG/PNG・5MBまで)</span>';
-    logoDiv.appendChild(logoLabel);
+    // ロゴ(画像・表示サイズ)はHPで協賛のみ表示するため、協賛のカードにだけ入力欄を出す
+    if (type === '協賛') {
+        // Logo field (企業アイコン)
+        const logoDiv = document.createElement('div');
+        const logoLabel = document.createElement('label');
+        logoLabel.style.cssText = 'display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);';
+        logoLabel.innerHTML = '企業・団体ロゴ <span style="font-size: 0.75rem;">(任意・PDF/JPEG/PNG・5MBまで)</span>';
+        logoDiv.appendChild(logoLabel);
 
-    const logoHiddenInput = document.createElement('input');
-    logoHiddenInput.type = 'hidden';
-    logoHiddenInput.className = 'stakeholder-field-logo';
-    logoHiddenInput.value = data.logo || '';
-    logoDiv.appendChild(logoHiddenInput);
+        const logoHiddenInput = document.createElement('input');
+        logoHiddenInput.type = 'hidden';
+        logoHiddenInput.className = 'stakeholder-field-logo';
+        logoHiddenInput.value = data.logo || '';
+        logoDiv.appendChild(logoHiddenInput);
 
-    const logoRow = document.createElement('div');
-    logoRow.style.cssText = 'display: flex; align-items: center; gap: 12px;';
+        const logoRow = document.createElement('div');
+        logoRow.style.cssText = 'display: flex; align-items: center; gap: 12px;';
 
-    const logoPreview = document.createElement('div');
-    logoPreview.className = 'stakeholder-logo-preview';
-    logoPreview.style.cssText = 'width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--primary-light); background: #fff; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;';
-    if (data.logo) {
-        const previewImg = document.createElement('img');
-        previewImg.src = data.logo;
-        previewImg.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
-        logoPreview.appendChild(previewImg);
+        const logoPreview = document.createElement('div');
+        logoPreview.className = 'stakeholder-logo-preview';
+        logoPreview.style.cssText = 'width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--primary-light); background: #fff; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;';
+        if (data.logo) {
+            const previewImg = document.createElement('img');
+            previewImg.src = data.logo;
+            previewImg.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
+            logoPreview.appendChild(previewImg);
+        }
+        logoRow.appendChild(logoPreview);
+
+        const logoFileInput = document.createElement('input');
+        logoFileInput.type = 'file';
+        logoFileInput.accept = 'application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png';
+        logoFileInput.style.cssText = 'flex: 1; font-size: 0.85rem;';
+        bindImageUpload(logoFileInput, ([image]) => {
+            logoHiddenInput.value = image;
+            logoPreview.innerHTML = '';
+            const previewImg = document.createElement('img');
+            previewImg.src = image;
+            previewImg.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
+            logoPreview.appendChild(previewImg);
+        });
+        logoRow.appendChild(logoFileInput);
+
+        logoDiv.appendChild(logoRow);
+        wrapper.appendChild(logoDiv);
+
+        // Logo size field (大=正方形 / 中=幅同じ・高さ半分)
+        const sizeDiv = document.createElement('div');
+        const sizeLabel = document.createElement('label');
+        sizeLabel.style.cssText = 'display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);';
+        sizeLabel.innerHTML = 'ロゴ表示サイズ <span style="font-size: 0.75rem;">(協賛金額等に応じて選択)</span>';
+        sizeDiv.appendChild(sizeLabel);
+        const sizeSelect = document.createElement('select');
+        sizeSelect.className = 'stakeholder-field-size';
+        sizeSelect.style.cssText = 'width: 100%; padding: 9px 12px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: #000000; font-size: 0.95rem; font-family: inherit; cursor: pointer;';
+        sizeSelect.innerHTML = `
+            <option value="medium">中(標準:正方形の半分の高さ)</option>
+            <option value="large">大(正方形で目立つ表示)</option>
+        `;
+        sizeSelect.value = data.size === 'large' ? 'large' : 'medium';
+        sizeDiv.appendChild(sizeSelect);
+        wrapper.appendChild(sizeDiv);
     }
-    logoRow.appendChild(logoPreview);
-
-    const logoFileInput = document.createElement('input');
-    logoFileInput.type = 'file';
-    logoFileInput.accept = 'application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png';
-    logoFileInput.style.cssText = 'flex: 1; font-size: 0.85rem;';
-    bindImageUpload(logoFileInput, ([image]) => {
-        logoHiddenInput.value = image;
-        logoPreview.innerHTML = '';
-        const previewImg = document.createElement('img');
-        previewImg.src = image;
-        previewImg.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
-        logoPreview.appendChild(previewImg);
-    });
-    logoRow.appendChild(logoFileInput);
-
-    logoDiv.appendChild(logoRow);
-    wrapper.appendChild(logoDiv);
-
-    // Logo size field (大=正方形 / 中=幅同じ・高さ半分)
-    const sizeDiv = document.createElement('div');
-    const sizeLabel = document.createElement('label');
-    sizeLabel.style.cssText = 'display: block; margin-bottom: 3px; font-size: 0.8rem; color: var(--text-dim);';
-    sizeLabel.innerHTML = 'ロゴ表示サイズ <span style="font-size: 0.75rem;">(協賛金額等に応じて選択)</span>';
-    sizeDiv.appendChild(sizeLabel);
-    const sizeSelect = document.createElement('select');
-    sizeSelect.className = 'stakeholder-field-size';
-    sizeSelect.style.cssText = 'width: 100%; padding: 9px 12px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: #000000; font-size: 0.95rem; font-family: inherit; cursor: pointer;';
-    sizeSelect.innerHTML = `
-        <option value="medium">中(標準:正方形の半分の高さ)</option>
-        <option value="large">大(正方形で目立つ表示)</option>
-    `;
-    sizeSelect.value = data.size === 'large' ? 'large' : 'medium';
-    sizeDiv.appendChild(sizeSelect);
-    wrapper.appendChild(sizeDiv);
 
     card.appendChild(wrapper);
 
@@ -1803,10 +1811,12 @@ function getStakeholdersFromForm() {
         cards.forEach(card => {
             const name = card.querySelector('.stakeholder-field-name').value.trim();
             const url = card.querySelector('.stakeholder-field-url').value.trim();
-            const logo = card.querySelector('.stakeholder-field-logo').value.trim();
+            if (!name) return;
+            // ロゴは協賛のみ(他のカードには入力欄が無い)
+            const logoEl = card.querySelector('.stakeholder-field-logo');
             const sizeEl = card.querySelector('.stakeholder-field-size');
-            const size = sizeEl ? sizeEl.value : 'medium';
-            if (name) result.push({ type, name, url, logo, size });
+            if (logoEl) result.push({ type, name, url, logo: logoEl.value.trim(), size: sizeEl ? sizeEl.value : 'medium' });
+            else result.push({ type, name, url });
         });
     });
     return result;
