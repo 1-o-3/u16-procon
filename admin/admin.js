@@ -599,10 +599,9 @@ function initNewsLogic() {
         });
     }
 
-    loadAllSubdivisions().then(() => {
-        renderSubdivisions(["競技部門 (U-16)"]);
-        syncCompSubdivisions();
-    });
+    // DBの部門一覧の読み込みは showAdminPanel() → refreshSubdivisions() が行う(ここでは既定の選択肢で描画しておく)
+    renderSubdivisions(["競技部門 (U-16)"]);
+    syncCompSubdivisions();
 }
 
 function syncCompSubdivisions() {
@@ -666,9 +665,19 @@ function showAdminPanel() {
         localStorage.setItem('mockFixedData', JSON.stringify(defaultFixed));
     }
 
-    loadAllSubdivisions().then(() => {
-        switchAdminSection('dashboard'); // ログイン後、最初に表示するページ(HPのHOMEに相当)
-    });
+    // ログイン後、最初に表示するページ(HPのHOMEに相当)。
+    // 部門一覧の読み込み完了を待ってから切り替えると、全記事(画像込みで数MB)の取得に数秒かかる間に
+    // 別の項目で入力を始めていた場合でも強制的にダッシュボードへ戻され、入力内容が消えてしまうため、先に切り替える。
+    switchAdminSection('dashboard');
+    refreshSubdivisions();
+}
+
+// 部門の選択肢をDBの内容で更新する。読み込みには時間がかかるため、完了時点のチェック状態を保ったまま選択肢だけ差し替える。
+async function refreshSubdivisions() {
+    await loadAllSubdivisions();
+    const checked = Array.from(document.querySelectorAll('input[name="news-division"]:checked')).map(cb => cb.value);
+    renderSubdivisions(checked);
+    syncCompSubdivisions();
 }
 
 let qaData = [];

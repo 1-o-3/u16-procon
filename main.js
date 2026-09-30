@@ -535,16 +535,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         container.innerHTML = '';
         data.forEach(item => {
+            // 1大会ごとに「ポスター(枠なし)」と「詳細情報のカード」を別々に縦に並べる
+            const eventEl = document.createElement('div');
+            eventEl.className = 'reveal-on-scroll';
+            eventEl.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
+
+            if (item.poster_image) {
+                const poster = document.createElement('img');
+                poster.src = item.poster_image;
+                poster.alt = `${item.title} ポスター`;
+                poster.style.cssText = 'width: 100%; max-width: 560px; display: block; margin: 0 auto;';
+                eventEl.appendChild(poster);
+            }
+
             const div = document.createElement('div');
-            div.className = 'glass reveal-on-scroll';
+            div.className = 'glass';
             div.style.padding = '25px';
 
             let html = '';
-
-            // Poster image (ポスター画像) — カードの一番上に表示し、その下に詳細情報を並べる
-            if (item.poster_image) {
-                html += `<img src="${item.poster_image}" alt="${item.title} ポスター" style="width: 100%; max-width: 560px; display: block; margin: 0 auto 20px; border-radius: 12px; box-shadow: 0 4px 16px rgba(26, 123, 196, 0.12);">`;
-            }
 
             // Title
             html += `<h3 style="font-size: 1.3rem; color: var(--text-main); font-weight: 700; margin-bottom: 12px;">${item.title}</h3>`;
@@ -608,8 +616,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             div.innerHTML = html;
-            container.appendChild(div);
-            observer.observe(div);
+            eventEl.appendChild(div);
+            container.appendChild(eventEl);
+            observer.observe(eventEl);
         });
         renderPdfImages(container);
 
