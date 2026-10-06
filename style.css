@@ -965,12 +965,13 @@ select, select option, option {
 }
 
 /* Responsive */
+/* .page-header など .container を兼ねる要素の上下余白を消さないよう、左右の余白のみ指定する */
 @media (max-width: 1440px) {
-    .container { max-width: 100%; padding: 0 32px; }
+    .container { max-width: 100%; padding-left: 32px; padding-right: 32px; }
 }
 
 @media (max-width: 768px) {
-    .container { padding: 0 24px; }
+    .container { padding-left: 24px; padding-right: 24px; }
     nav ul { display: none; }
 
     .category-grid {

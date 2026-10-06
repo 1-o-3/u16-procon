@@ -170,7 +170,7 @@ const ADMIN_SECTIONS = {
     'fixed-class-work':    { panel: 'panel-fixed', fixedCategory: 'CLASS_WORK', label: '作品部門', target: '大会についてページ「部門紹介」内、作品部門カードに表示されます' },
     'fixed-tools':         { panel: 'panel-fixed', fixedCategory: 'TOOLS', label: 'ツール紹介', target: '大会についてページ「ツール紹介」セクションに表示されます' },
     'fixed-sns':           { panel: 'panel-fixed', fixedCategory: 'SNS', label: 'SNS', target: '共有情報：HOMEページに表示されます(1件以上登録すると自動的に表示され、0件なら自動的に非表示になります)' },
-    'fixed-stakeholders':  { panel: 'panel-fixed', fixedCategory: 'STAKEHOLDERS', label: 'スポンサー (主催・共催・協賛・後援)', target: 'スポンサーページにグループごとに表示されます' },
+    'fixed-stakeholders':  { panel: 'panel-fixed', fixedCategory: 'STAKEHOLDERS', label: 'スポンサー (主催・共催・協賛・後援・協力)', target: 'スポンサーページにグループごとに表示されます' },
     'terms':               { panel: 'panel-terms' },
     'privacy':             { panel: 'panel-privacy' },
 };
@@ -421,7 +421,7 @@ function showFixedPreview() {
         const stakeholders = getStakeholdersFromForm();
         previewHTML = `<h2 style="color: var(--primary); margin-bottom: 20px;">スポンサー プレビュー</h2>`;
         if (stakeholders.length > 0) {
-            const order = ['主催', '共催', '協賛', '後援'];
+            const order = ['主催', '共催', '協賛', '後援', '協力'];
             const groups = {};
             stakeholders.forEach(s => {
                 if (!groups[s.type]) groups[s.type] = [];
@@ -431,7 +431,11 @@ function showFixedPreview() {
                 if (!groups[type] || groups[type].length === 0) return;
                 previewHTML += `<h4 style="color: var(--primary); margin: 15px 0 10px;">${type}</h4>`;
                 previewHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; margin-bottom: 10px;">`;
-                groups[type].forEach(s => {
+                // HPと同じく、協賛は登録順に関わらず「大」→「中」の順に並べる
+                const items = type === '協賛'
+                    ? [...groups[type].filter(s => s.size === 'large'), ...groups[type].filter(s => s.size !== 'large')]
+                    : groups[type];
+                items.forEach(s => {
                     if (type !== '協賛') {
                         // HPと同じく、協賛以外は名称のみ
                         previewHTML += `<div style="text-align: center; background: white; border: 1px solid var(--glass-border); border-radius: 10px; padding: 14px 8px; font-size: 0.85rem; color: var(--text-main); font-weight: 600;">${s.name}</div>`;
@@ -443,8 +447,8 @@ function showFixedPreview() {
                         : `<span style="color: var(--primary); font-weight: 800; font-size: 1.3rem;">${(s.name || '?').charAt(0)}</span>`;
                     previewHTML += `
                         <div style="text-align: center;">
-                            <div style="width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; background: white; border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px; box-sizing: border-box;">
-                                <div style="max-height: ${frameHeight}; display: flex; align-items: center; justify-content: center;">${logoHtml}</div>
+                            <div style="width: 100%; height: ${frameHeight}; display: flex; align-items: center; justify-content: center; background: white; border: 1px solid var(--glass-border); border-radius: 10px; padding: 8px; box-sizing: border-box;">
+                                <div style="max-height: 100%; display: flex; align-items: center; justify-content: center;">${logoHtml}</div>
                             </div>
                             <div style="font-size: 0.8rem; color: var(--text-main); margin-top: 6px; font-weight: 600;">${s.name}${s.size === 'large' ? ' 🌟' : ''}</div>
                         </div>
@@ -1401,7 +1405,7 @@ function initFixedLogic() {
 
     const addSnsBtn = document.getElementById('add-sns-account-btn');
     if (addSnsBtn) {
-        addSnsBtn.addEventListener('click', () => addSnsAccountCard());
+        addSnsBtn.addEventListener('click', () => requestAddCard(addSnsBtn, 'sns-accounts-list', () => addSnsAccountCard()));
     }
 
     const addToolBtn = document.getElementById('add-tool-btn');
@@ -1442,7 +1446,7 @@ function resetFixedForm() {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '';
     });
-    ['主催', '共催', '協賛', '後援'].forEach(type => {
+    ['主催', '共催', '協賛', '後援', '協力'].forEach(type => {
         const el = document.getElementById(`stakeholder-list-${type}`);
         if (el) el.innerHTML = '';
     });
@@ -1580,6 +1584,55 @@ function legacySnsToArray(sns) {
     return result;
 }
 
+// 「追加」ボタン(2つ目以降)の共通処理:
+// 既存フォームの必須項目([data-required-field])がすべて埋まっている場合のみ次のフォームを追加する。
+// 未入力があれば、そのフォームを揺らして知らせ、入力されるまで追加ボタンを無効化する。
+function getIncompleteCards(list) {
+    return Array.from(list.children).filter(card =>
+        Array.from(card.querySelectorAll('[data-required-field]')).some(input => !input.value.trim()));
+}
+
+function watchAddButton(btn, list) {
+    if (list.dataset.addGuard) return;
+    list.dataset.addGuard = '1';
+    // 入力・カード削除・フォームのリセットのたびに再判定し、未入力が無くなればボタンを戻す
+    const recheck = () => {
+        list.querySelectorAll('.field-missing').forEach(input => {
+            if (input.value.trim()) input.classList.remove('field-missing');
+        });
+        if (getIncompleteCards(list).length === 0) btn.disabled = false;
+    };
+    list.addEventListener('input', recheck);
+    new MutationObserver(recheck).observe(list, { childList: true });
+}
+
+function requestAddCard(btn, listId, addFn) {
+    const list = document.getElementById(listId);
+    if (!list) return;
+    watchAddButton(btn, list);
+
+    const incomplete = getIncompleteCards(list);
+    if (incomplete.length === 0) {
+        addFn();
+        return;
+    }
+
+    btn.disabled = true;
+    incomplete.forEach(card => {
+        card.querySelectorAll('[data-required-field]').forEach(input => {
+            if (!input.value.trim()) input.classList.add('field-missing');
+        });
+        // アニメーションを毎回最初から再生する
+        card.classList.remove('card-shake');
+        void card.offsetWidth;
+        card.classList.add('card-shake');
+        card.addEventListener('animationend', () => card.classList.remove('card-shake'), { once: true });
+    });
+    incomplete[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const firstMissing = incomplete[0].querySelector('.field-missing');
+    if (firstMissing) firstMissing.focus({ preventScroll: true });
+}
+
 function addSnsAccountCard(data = {}) {
     const list = document.getElementById('sns-accounts-list');
     if (!list) return;
@@ -1594,22 +1647,22 @@ function addSnsAccountCard(data = {}) {
             style="position: absolute; top: 15px; right: 15px; background: rgba(214, 48, 49, 0.1); border: 1px solid rgba(214, 48, 49, 0.2); color: #d63031; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">削除</button>
         <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
             <div>
-                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">サービス名 (例: Instagram, X, YouTube など)</label>
-                <input type="text" class="sns-field-service" value="${data.service || ''}" placeholder="Instagram" 
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">サービス名 (例: Instagram, X, YouTube など) <span style="color: #ff8080;">*必須</span></label>
+                <input type="text" class="sns-field-service" data-required-field value="${data.service || ''}" placeholder="Instagram" 
                     style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
             </div>
             <div>
-                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">ユーザーID (@を含めて入力)</label>
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">ユーザーID (@を含めて入力) <span style="font-size: 0.75rem;">(任意)</span></label>
                 <input type="text" class="sns-field-id" value="${data.id || ''}" placeholder="@u16_procon" 
                     style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
             </div>
             <div>
-                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">リンクURL</label>
-                <input type="url" class="sns-field-url" value="${data.link || ''}" placeholder="https://x.com/u16_procon" 
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">リンクURL <span style="color: #ff8080;">*必須</span></label>
+                <input type="url" class="sns-field-url" data-required-field value="${data.link || ''}" placeholder="https://x.com/u16_procon" 
                     style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
             </div>
             <div>
-                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">コメント (HP上での補足説明)</label>
+                <label style="display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-dim);">コメント (HP上での補足説明) <span style="font-size: 0.75rem;">(任意)</span></label>
                 <input type="text" class="sns-field-comment" value="${data.comment || ''}" placeholder="最新情報を発信中！" 
                     style="width: 100%; padding: 10px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-family: inherit;">
             </div>
@@ -1705,6 +1758,7 @@ function addStakeholderCard(type, data = {}) {
     nameInput.value = data.name || '';
     nameInput.placeholder = '例：静岡県';
     nameInput.required = true;
+    nameInput.dataset.requiredField = '';
     nameInput.style.cssText = 'width: 100%; padding: 9px 12px; background: #ffffff; border: 1px solid var(--primary-light); border-radius: 8px; color: var(--text-main); font-size: 0.95rem; font-family: inherit;';
     nameDiv.appendChild(nameInput);
     wrapper.appendChild(nameDiv);
@@ -1802,7 +1856,7 @@ function addStakeholderCard(type, data = {}) {
 }
 
 function getStakeholdersFromForm() {
-    const types = ['主催', '共催', '協賛', '後援'];
+    const types = ['主催', '共催', '協賛', '後援', '協力'];
     const result = [];
     types.forEach(type => {
         const list = document.getElementById('stakeholder-list-' + type);

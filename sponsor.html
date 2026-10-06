@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>スポンサー | U-16プログラミングコンテスト 静岡大会</title>
-    <meta name="description" content="U-16プログラミングコンテスト静岡大会の主催・共催・協賛・後援企業・団体をご紹介します。">
+    <meta name="description" content="U-16プログラミングコンテスト静岡大会の主催・共催・協賛・後援・協力企業・団体をご紹介します。">
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="stylesheet" href="/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,6 +14,27 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700;900&display=swap"
         rel="stylesheet">
     <style>
+        /* PC表示では、ブラウザ拡大率80%相当の見た目を100%で表示する(ヘッダーも含めページ全体を縮小)。
+           スマホ・タブレット幅(900px以下)は文字が小さくなりすぎるため等倍のまま */
+        @media (min-width: 901px) {
+            html {
+                zoom: 0.8;
+            }
+
+            /* 80%表示時と同じく、本文幅は最大1440pxに収める(style.cssの1440px以下での全幅指定を打ち消す) */
+            /* 縮小しても、フッターが画面下端に来るよう高さを補正する(100vh ÷ 0.8) */
+            .page-body {
+                min-height: 125vh;
+            }
+
+            /* .page-header も .container を兼ねているため、上下の余白は上書きせず左右のみ指定する */
+            .container {
+                max-width: 1440px;
+                padding-left: 40px;
+                padding-right: 40px;
+            }
+        }
+
         .sponsor-group {
             margin-bottom: 50px;
         }
@@ -27,10 +48,17 @@
             border-bottom: 2px solid var(--primary-light);
         }
 
+        /* カードは一定幅で並べ、行ごとに中央揃え(最後の行が端数でも中央に寄せる) */
         .sponsor-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 20px;
+        }
+
+        .sponsor-grid > .sponsor-card {
+            flex: 0 0 220px;
+            max-width: 100%;
         }
 
         .sponsor-card {
@@ -42,22 +70,80 @@
             padding: 25px 20px;
         }
 
-        .sponsor-card a,
-        .sponsor-card span.sponsor-name {
+        /* カードはホバー時のアニメーション・見た目の変化なし */
+        .sponsor-card.glass,
+        .sponsor-card.glass:hover {
+            transition: none;
+            transform: none;
+            background: var(--bg-card);
+            border-color: var(--glass-border);
+            box-shadow: var(--card-shadow);
+        }
+
+        /* 協賛:ロゴ表示エリアの高さはロゴサイズに合わせる(「中」はカード自体を低くする) */
+        .sponsor-logo-area {
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sponsor-logo-area.size-medium {
+            height: 90px;
+        }
+
+        /* 協賛:「大」の並びと「中」の並びの間隔 */
+        .sponsor-grid + .sponsor-grid {
+            margin-top: 20px;
+        }
+
+        .sponsor-card a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .sponsor-name {
             color: var(--text-main);
             font-weight: 700;
             font-size: 1rem;
             text-decoration: none;
         }
 
-        .sponsor-card a:hover {
-            color: var(--primary);
+        /* URLが登録されている名称は薄い色の下線。なければ下線なし */
+        .sponsor-name.has-link {
+            text-decoration: underline;
+            text-decoration-color: var(--primary-light);
+            text-decoration-thickness: 2px;
+            text-underline-offset: 4px;
         }
 
-        /* 主催・共催・後援はロゴを出さず名称のみのカード */
+        /* 主催・共催・後援・協力はロゴを出さず名称のみのカード */
         .sponsor-card.sponsor-card-name-only {
             justify-content: center;
             padding: 20px;
+        }
+
+        /* 主催・共催・後援・協力はカード全体がリンク */
+        a.sponsor-card {
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* 主催はなるべく名称を1行で表示する(カード幅を名称に合わせて広げる) */
+        .sponsor-grid-organizer > .sponsor-card {
+            flex: 1 1 auto;
+        }
+
+        .sponsor-grid-organizer .sponsor-name {
+            white-space: nowrap;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 600px) {
+            .sponsor-grid-organizer .sponsor-name {
+                white-space: normal;
+            }
         }
 
         /* ロゴ表示枠:「大」は正方形、「中」は幅が同じで高さが半分。長辺を枠に合わせて縮小表示する */

@@ -422,35 +422,54 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
 
                     if (Array.isArray(stakeholders) && stakeholders.length > 0) {
-                        const order = ['主催', '共催', '協賛', '後援'];
+                        const order = ['主催', '共催', '協賛', '後援', '協力'];
                         const groups = {};
                         stakeholders.forEach(s => {
                             if (!groups[s.type]) groups[s.type] = [];
                             groups[s.type].push(s);
                         });
 
+                        const renderCard = (type, s) => {
+                            // URLが登録されている名称は薄い色の下線で示す
+                            const nameHtml = `<span class="sponsor-name${s.url ? ' has-link' : ''}">${s.name}</span>`;
+                            // 主催・共催・後援・協力はロゴを出さず名称のみ。URLがあればカード全体をリンクにする
+                            if (type !== '協賛') {
+                                return s.url
+                                    ? `<a href="${s.url}" target="_blank" rel="noopener" class="sponsor-card sponsor-card-name-only glass">${nameHtml}</a>`
+                                    : `<div class="sponsor-card sponsor-card-name-only glass">${nameHtml}</div>`;
+                            }
+                            // ロゴサイズ:「大」(size:large)は正方形枠、「中」(既定値)は幅同じ・高さ半分の枠
+                            const sizeClass = s.size === 'large' ? '' : 'size-medium';
+                            const logoHtml = s.logo
+                                ? `<div class="sponsor-logo-frame ${sizeClass}"><img src="${s.logo}" alt="${s.name}"></div>`
+                                : `<div class="sponsor-logo-frame ${sizeClass} sponsor-logo-placeholder">${(s.name || '?').charAt(0)}</div>`;
+                            // 協賛は企業名のみをリンクにする
+                            const sponsorNameHtml = s.url
+                                ? `<a href="${s.url}" target="_blank" rel="noopener">${nameHtml}</a>`
+                                : nameHtml;
+                            // ロゴエリアの高さをロゴサイズに合わせる(同じサイズ同士で並べるので企業名の位置はそろう)
+                            return `<div class="sponsor-card glass"><div class="sponsor-logo-area ${sizeClass}">${logoHtml}</div>${sponsorNameHtml}</div>`;
+                        };
+
+                        const renderGrid = (type, list, extraClass = '') =>
+                            `<div class="sponsor-grid${extraClass}">${list.map(s => renderCard(type, s)).join('')}</div>`;
+
                         let html = '';
                         order.forEach(type => {
                             if (!groups[type] || groups[type].length === 0) return;
+                            let gridsHtml;
+                            // 協賛はロゴサイズでカードの大きさが変わるため、登録順に関わらず「大」→「中」の順に段を分けて並べる
+                            if (type === '協賛') {
+                                const large = groups[type].filter(s => s.size === 'large');
+                                const medium = groups[type].filter(s => s.size !== 'large');
+                                gridsHtml = (large.length ? renderGrid(type, large) : '')
+                                    + (medium.length ? renderGrid(type, medium, ' sponsor-grid-medium') : '');
+                            } else {
+                                gridsHtml = renderGrid(type, groups[type], type === '主催' ? ' sponsor-grid-organizer' : '');
+                            }
                             html += `<div class="sponsor-group reveal-on-scroll">
                                 <h3 class="sponsor-group-title">${type}</h3>
-                                <div class="sponsor-grid">
-                                    ${groups[type].map(s => {
-                                        const nameHtml = s.url
-                                            ? `<a href="${s.url}" target="_blank" rel="noopener">${s.name}</a>`
-                                            : `<span class="sponsor-name">${s.name}</span>`;
-                                        // ロゴは協賛のみ表示する(主催・共催・後援は名称のみ)
-                                        if (type !== '協賛') {
-                                            return `<div class="sponsor-card sponsor-card-name-only glass">${nameHtml}</div>`;
-                                        }
-                                        // ロゴサイズ:「大」(size:large)は正方形枠、「中」(既定値)は幅同じ・高さ半分の枠
-                                        const sizeClass = s.size === 'large' ? '' : 'size-medium';
-                                        const logoHtml = s.logo
-                                            ? `<div class="sponsor-logo-frame ${sizeClass}"><img src="${s.logo}" alt="${s.name}"></div>`
-                                            : `<div class="sponsor-logo-frame ${sizeClass} sponsor-logo-placeholder">${(s.name || '?').charAt(0)}</div>`;
-                                        return `<div class="sponsor-card glass">${logoHtml}${nameHtml}</div>`;
-                                    }).join('')}
-                                </div>
+                                ${gridsHtml}
                             </div>`;
                         });
 

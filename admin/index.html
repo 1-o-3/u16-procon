@@ -410,6 +410,23 @@
             pointer-events: none;
         }
 
+        /* 必須項目が未入力のまま「追加」が押されたとき、未入力のフォームを揺らして知らせる */
+        @keyframes card-shake {
+            0%, 100% { transform: translateX(0); }
+            15%, 45%, 75% { transform: translateX(-6px); }
+            30%, 60%, 90% { transform: translateX(6px); }
+        }
+
+        .card-shake {
+            animation: card-shake 0.45s ease-in-out;
+        }
+
+        /* 未入力の必須項目(インラインstyleの枠線より優先させる) */
+        .field-missing {
+            border-color: #d63031 !important;
+            box-shadow: 0 0 0 3px rgba(214, 48, 49, 0.15);
+        }
+
         /* 「今すぐエントリー」表示切り替えスイッチ
            (style.css の .form-group label { display: block } に負けないよう label.toggle-switch で指定) */
         label.toggle-switch {
@@ -599,7 +616,7 @@
                         <button type="button" class="admin-dashboard-card" onclick="switchAdminSection('fixed-stakeholders')">
                             <span class="card-tag">スポンサー ページ</span>
                             <h4>スポンサー管理</h4>
-                            <p>主催・共催・協賛・後援の団体・企業とロゴを登録します。</p>
+                            <p>主催・共催・協賛・後援・協力の団体・企業とロゴを登録します。</p>
                         </button>
                         <button type="button" class="admin-dashboard-card" onclick="switchAdminSection('qa')">
                             <span class="card-tag">Q&A ページ</span>
@@ -905,13 +922,13 @@
                             </div>
 
                             <div class="form-group field-fixed-stakeholders" style="margin-bottom: 15px; text-align: left; display: none;">
-                                <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px;">📋 主催・共催・協賛・後援の団体・企業を登録します。団体名は必須、URLは任意です。ここで登録した内容は「スポンサー」ページに表示されます。<br>ロゴ画像は<strong>協賛のみ</strong>HPに表示されます(主催・共催・後援は名称のみ)。協賛のロゴ表示サイズは「大(正方形)」「中(大の半分の高さ・幅は同じ)」から選択でき、協賛金額等に応じて目立たせたい企業は「大」を選んでください。</p>
+                                <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px;">📋 主催・共催・協賛・後援・協力の団体・企業を登録します。団体名は必須、URLは任意です。ここで登録した内容は「スポンサー」ページに表示されます。<br>ロゴ画像は<strong>協賛のみ</strong>HPに表示されます(主催・共催・後援・協力は名称のみ)。協賛のロゴ表示サイズは「大(正方形)」「中(大の半分の高さ・幅は同じ)」から選択でき、協賛金額等に応じて目立たせたい企業は「大」を選んでください。</p>
 
                                 <!-- 主催 -->
                                 <div style="margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <label style="font-weight: 700; color: var(--primary); font-size: 1rem;">🏆 主催</label>
-                                        <button type="button" class="btn-outline" onclick="addStakeholderCard('主催')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-主催', () => addStakeholderCard('主催'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
                                     </div>
                                     <div id="stakeholder-list-主催" style="display: flex; flex-direction: column; gap: 10px;"></div>
                                 </div>
@@ -920,7 +937,7 @@
                                 <div style="margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <label style="font-weight: 700; color: var(--secondary); font-size: 1rem;">🤝 共催</label>
-                                        <button type="button" class="btn-outline" onclick="addStakeholderCard('共催')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-共催', () => addStakeholderCard('共催'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
                                     </div>
                                     <div id="stakeholder-list-共催" style="display: flex; flex-direction: column; gap: 10px;"></div>
                                 </div>
@@ -929,7 +946,7 @@
                                 <div style="margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <label style="font-weight: 700; color: #a8ff78; font-size: 1rem;">💰 協賛</label>
-                                        <button type="button" class="btn-outline" onclick="addStakeholderCard('協賛')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-協賛', () => addStakeholderCard('協賛'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
                                     </div>
                                     <div id="stakeholder-list-協賛" style="display: flex; flex-direction: column; gap: 10px;"></div>
                                 </div>
@@ -938,9 +955,18 @@
                                 <div style="margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <label style="font-weight: 700; color: #78d8ff; font-size: 1rem;">⭐ 後援</label>
-                                        <button type="button" class="btn-outline" onclick="addStakeholderCard('後援')" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-後援', () => addStakeholderCard('後援'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
                                     </div>
                                     <div id="stakeholder-list-後援" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                </div>
+
+                                <!-- 協力 -->
+                                <div style="margin-bottom: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <label style="font-weight: 700; color: #b78cff; font-size: 1rem;">🙌 協力</label>
+                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-協力', () => addStakeholderCard('協力'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                    </div>
+                                    <div id="stakeholder-list-協力" style="display: flex; flex-direction: column; gap: 10px;"></div>
                                 </div>
                             </div>
                             <div class="form-group field-fixed-sns" style="margin-bottom: 15px; text-align: left; display: none;">
