@@ -427,6 +427,111 @@
             box-shadow: 0 0 0 3px rgba(214, 48, 49, 0.15);
         }
 
+        /* 協賛の簡易プレビュー(ドラッグ&ドロップで並び替え) */
+        .sponsor-order-preview-wrap {
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--primary-pale);
+            border: 1px dashed var(--primary-light);
+            border-radius: 12px;
+        }
+
+        .sponsor-order-preview-title {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .sponsor-order-preview-hint {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            margin-bottom: 12px;
+        }
+
+        .sponsor-preview-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .sponsor-preview-row + .sponsor-preview-row {
+            margin-top: 10px;
+        }
+
+        .sponsor-preview-tile {
+            width: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 8px;
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* ドラッグ中のカード(その場で入れ替わる) */
+        .sponsor-preview-tile.dragging {
+            cursor: grabbing;
+            opacity: 0.6;
+            outline: 2px dashed var(--secondary);
+            outline-offset: 2px;
+        }
+
+        /* 追加フォームの下側の「追加」ボタン(フォームが1件も無いときは上のボタンだけにする) */
+        .stakeholder-list:empty + .add-bottom-btn {
+            display: none;
+        }
+
+        .add-bottom-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+        }
+
+        .sponsor-preview-logo {
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .sponsor-preview-tile.size-medium .sponsor-preview-logo {
+            height: 45px;
+        }
+
+        .sponsor-preview-logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .sponsor-preview-logo span {
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .sponsor-preview-name {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-align: center;
+            word-break: break-all;
+            pointer-events: none;
+        }
+
         /* 「今すぐエントリー」表示切り替えスイッチ
            (style.css の .form-group label { display: block } に負けないよう label.toggle-switch で指定) */
         label.toggle-switch {
@@ -928,45 +1033,57 @@
                                 <div style="margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <label style="font-weight: 700; color: var(--primary); font-size: 1rem;">🏆 主催</label>
-                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-主催', () => addStakeholderCard('主催'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                        <button type="button" class="btn-outline" data-add-for="stakeholder-list-主催" onclick="requestAddCard(this, 'stakeholder-list-主催', () => addStakeholderCard('主催'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
                                     </div>
-                                    <div id="stakeholder-list-主催" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <div id="stakeholder-list-主催" class="stakeholder-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <button type="button" class="btn-outline add-bottom-btn" data-add-for="stakeholder-list-主催" onclick="requestAddCard(this, 'stakeholder-list-主催', () => addStakeholderCard('主催'))">＋ 主催を追加</button>
                                 </div>
 
                                 <!-- 共催 -->
                                 <div style="margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <label style="font-weight: 700; color: var(--secondary); font-size: 1rem;">🤝 共催</label>
-                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-共催', () => addStakeholderCard('共催'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                        <button type="button" class="btn-outline" data-add-for="stakeholder-list-共催" onclick="requestAddCard(this, 'stakeholder-list-共催', () => addStakeholderCard('共催'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
                                     </div>
-                                    <div id="stakeholder-list-共催" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <div id="stakeholder-list-共催" class="stakeholder-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <button type="button" class="btn-outline add-bottom-btn" data-add-for="stakeholder-list-共催" onclick="requestAddCard(this, 'stakeholder-list-共催', () => addStakeholderCard('共催'))">＋ 共催を追加</button>
                                 </div>
 
                                 <!-- 協賛 -->
                                 <div style="margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <label style="font-weight: 700; color: #a8ff78; font-size: 1rem;">💰 協賛</label>
-                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-協賛', () => addStakeholderCard('協賛'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                        <button type="button" class="btn-outline" data-add-for="stakeholder-list-協賛" onclick="requestAddCard(this, 'stakeholder-list-協賛', () => addStakeholderCard('協賛'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
                                     </div>
-                                    <div id="stakeholder-list-協賛" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <div id="stakeholder-list-協賛" class="stakeholder-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <button type="button" class="btn-outline add-bottom-btn" data-add-for="stakeholder-list-協賛" onclick="requestAddCard(this, 'stakeholder-list-協賛', () => addStakeholderCard('協賛'))">＋ 協賛を追加</button>
+
+                                    <!-- 協賛の簡易プレビュー(ドラッグ&ドロップで並び替え) -->
+                                    <div id="sponsor-order-preview-wrap" class="sponsor-order-preview-wrap" style="display: none;">
+                                        <p class="sponsor-order-preview-title">👀 HPでの並び順プレビュー</p>
+                                        <p class="sponsor-order-preview-hint">カードをドラッグすると並び順を変更でき、上の入力フォームの順番にも反映されます(保存するとHPに反映)。HPでは「大」が上段・「中」が下段に表示されるため、並び替えは「大」「中」それぞれの段の中で行えます。</p>
+                                        <div id="sponsor-order-preview"></div>
+                                    </div>
                                 </div>
 
                                 <!-- 後援 -->
                                 <div style="margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <label style="font-weight: 700; color: #78d8ff; font-size: 1rem;">⭐ 後援</label>
-                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-後援', () => addStakeholderCard('後援'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                        <button type="button" class="btn-outline" data-add-for="stakeholder-list-後援" onclick="requestAddCard(this, 'stakeholder-list-後援', () => addStakeholderCard('後援'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
                                     </div>
-                                    <div id="stakeholder-list-後援" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <div id="stakeholder-list-後援" class="stakeholder-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <button type="button" class="btn-outline add-bottom-btn" data-add-for="stakeholder-list-後援" onclick="requestAddCard(this, 'stakeholder-list-後援', () => addStakeholderCard('後援'))">＋ 後援を追加</button>
                                 </div>
 
                                 <!-- 協力 -->
                                 <div style="margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <label style="font-weight: 700; color: #b78cff; font-size: 1rem;">🙌 協力</label>
-                                        <button type="button" class="btn-outline" onclick="requestAddCard(this, 'stakeholder-list-協力', () => addStakeholderCard('協力'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
+                                        <button type="button" class="btn-outline" data-add-for="stakeholder-list-協力" onclick="requestAddCard(this, 'stakeholder-list-協力', () => addStakeholderCard('協力'))" style="padding: 6px 14px; font-size: 0.85rem;">＋ 追加</button>
                                     </div>
-                                    <div id="stakeholder-list-協力" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <div id="stakeholder-list-協力" class="stakeholder-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                                    <button type="button" class="btn-outline add-bottom-btn" data-add-for="stakeholder-list-協力" onclick="requestAddCard(this, 'stakeholder-list-協力', () => addStakeholderCard('協力'))">＋ 協力を追加</button>
                                 </div>
                             </div>
                             <div class="form-group field-fixed-sns" style="margin-bottom: 15px; text-align: left; display: none;">
@@ -974,7 +1091,7 @@
                                 <div id="sns-accounts-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
                                     <!-- SNS account cards will be injected here -->
                                 </div>
-                                <button type="button" id="add-sns-account-btn" class="btn-outline" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+                                <button type="button" id="add-sns-account-btn" data-add-for="sns-accounts-list" class="btn-outline" style="width: 100%; padding: 12px; font-size: 0.95rem;">
                                     ＋ SNSアカウントを追加する
                                 </button>
                             </div>

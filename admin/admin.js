@@ -1408,6 +1408,8 @@ function initFixedLogic() {
         addSnsBtn.addEventListener('click', () => requestAddCard(addSnsBtn, 'sns-accounts-list', () => addSnsAccountCard()));
     }
 
+    initSponsorOrderPreview();
+
     const addToolBtn = document.getElementById('add-tool-btn');
     if (addToolBtn) {
         addToolBtn.addEventListener('click', () => addToolCard());
@@ -1592,6 +1594,13 @@ function getIncompleteCards(list) {
         Array.from(card.querySelectorAll('[data-required-field]')).some(input => !input.value.trim()));
 }
 
+// 同じリストに対する追加ボタン(フォームの上と下)をすべて取得する
+function getAddButtons(btn, listId) {
+    const btns = Array.from(document.querySelectorAll(`[data-add-for="${listId}"]`));
+    if (!btns.includes(btn)) btns.push(btn);
+    return btns;
+}
+
 function watchAddButton(btn, list) {
     if (list.dataset.addGuard) return;
     list.dataset.addGuard = '1';
@@ -1600,7 +1609,7 @@ function watchAddButton(btn, list) {
         list.querySelectorAll('.field-missing').forEach(input => {
             if (input.value.trim()) input.classList.remove('field-missing');
         });
-        if (getIncompleteCards(list).length === 0) btn.disabled = false;
+        if (getIncompleteCards(list).length === 0) getAddButtons(btn, list.id).forEach(b => { b.disabled = false; });
     };
     list.addEventListener('input', recheck);
     new MutationObserver(recheck).observe(list, { childList: true });
@@ -1617,7 +1626,7 @@ function requestAddCard(btn, listId, addFn) {
         return;
     }
 
-    btn.disabled = true;
+    getAddButtons(btn, listId).forEach(b => { b.disabled = true; });
     incomplete.forEach(card => {
         card.querySelectorAll('[data-required-field]').forEach(input => {
             if (!input.value.trim()) input.classList.add('field-missing');
@@ -1733,11 +1742,110 @@ function getToolsFromForm() {
     return result;
 }
 
+let stakeholderCardSeq = 0;
+
+// ==============================
+// 協賛の簡易プレビュー(ドラッグ&ドロップで並び替え)
+// 入力フォームのカード順をそのまま表示し、並び替えた結果をフォームのカード順に書き戻す
+// ==============================
+function escapeHtml(str) {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return String(str).replace(/[&<>"']/g, c => map[c]);
+}
+
+function renderSponsorOrderPreview() {
+    const list = document.getElementById('stakeholder-list-協賛');
+    const wrap = document.getElementById('sponsor-order-preview-wrap');
+    const preview = document.getElementById('sponsor-order-preview');
+    if (!list || !wrap || !preview) return;
+
+    const cards = Array.from(list.querySelectorAll('[data-stakeholder-card]'));
+    wrap.style.display = cards.length > 0 ? '' : 'none';
+
+    // HPと同じく「大」を上段、「中」を下段に並べる
+    const rows = { large: [], medium: [] };
+    cards.forEach(card => {
+        const sizeEl = card.querySelector('.stakeholder-field-size');
+        rows[sizeEl && sizeEl.value === 'large' ? 'large' : 'medium'].push(card);
+    });
+
+    preview.innerHTML = '';
+    ['large', 'medium'].forEach(size => {
+        if (rows[size].length === 0) return;
+        const row = document.createElement('div');
+        row.className = 'sponsor-preview-row';
+        rows[size].forEach(card => {
+            const name = card.querySelector('.stakeholder-field-name').value.trim();
+            const logo = card.querySelector('.stakeholder-field-logo').value.trim();
+            const tile = document.createElement('div');
+            tile.className = 'sponsor-preview-tile' + (size === 'medium' ? ' size-medium' : '');
+            tile.dataset.cardId = card.dataset.stakeholderCard;
+            tile.innerHTML = `
+                <div class="sponsor-preview-logo">${logo ? `<img src="${logo}" alt="">` : `<span>${escapeHtml((name || '?').charAt(0))}</span>`}</div>
+                <div class="sponsor-preview-name">${name ? escapeHtml(name) : '(未入力)'}</div>`;
+            row.appendChild(tile);
+        });
+        preview.appendChild(row);
+    });
+}
+
+function initSponsorOrderPreview() {
+    const list = document.getElementById('stakeholder-list-協賛');
+    const preview = document.getElementById('sponsor-order-preview');
+    if (!list || !preview) return;
+
+    // 入力・サイズ変更・カードの追加/削除/並び替えのたびにプレビューを作り直す
+    list.addEventListener('input', renderSponsorOrderPreview);
+    list.addEventListener('change', renderSponsorOrderPreview);
+    new MutationObserver(renderSponsorOrderPreview).observe(list, { childList: true });
+
+    // マウス・タッチ共通のポインター操作で並び替える。ドラッグ中はカードがその場で入れ替わり、
+    // 離した時点の並びを入力フォームのカード順に書き戻す(保存時はこの順で登録される)
+    let dragging = null;
+
+    preview.addEventListener('pointerdown', e => {
+        const tile = e.target.closest('.sponsor-preview-tile');
+        if (!tile || e.button !== 0) return;
+        e.preventDefault();
+        dragging = tile;
+        tile.setPointerCapture(e.pointerId);
+        tile.classList.add('dragging');
+    });
+
+    preview.addEventListener('pointermove', e => {
+        if (!dragging) return;
+        // 「大」「中」の段をまたぐ移動はできないため、同じ段の中でだけ入れ替える
+        const row = dragging.parentElement;
+        const others = Array.from(row.children).filter(t => t !== dragging);
+        // ポインターより後ろ(下の行、または同じ行で右側)にある最初のカードの前に入れる。無ければ末尾
+        const next = others.find(t => {
+            const r = t.getBoundingClientRect();
+            return e.clientY < r.top || (e.clientY <= r.bottom && e.clientX < r.left + r.width / 2);
+        }) || null;
+        if (dragging.nextElementSibling !== next) row.insertBefore(dragging, next);
+    });
+
+    const finishDrag = () => {
+        if (!dragging) return;
+        dragging.classList.remove('dragging');
+        dragging = null;
+        // プレビューの並び(大→中)の順に、入力フォームのカードを並べ直す
+        const ids = Array.from(preview.querySelectorAll('.sponsor-preview-tile')).map(t => t.dataset.cardId);
+        ids.forEach(id => {
+            const card = list.querySelector(`[data-stakeholder-card="${id}"]`);
+            if (card) list.appendChild(card);
+        });
+    };
+    preview.addEventListener('pointerup', finishDrag);
+    preview.addEventListener('pointercancel', finishDrag);
+}
+
 function addStakeholderCard(type, data = {}) {
     const list = document.getElementById('stakeholder-list-' + type);
     if (!list) return;
 
-    const idx = Date.now();
+    // 一括読み込み時に同じ値にならないよう連番で一意なIDを振る(プレビューの並び替えでカードを特定するため)
+    const idx = ++stakeholderCardSeq;
     const card = document.createElement('div');
     card.dataset.stakeholderCard = idx;
     card.dataset.stakeholderType = type;
@@ -1813,6 +1921,7 @@ function addStakeholderCard(type, data = {}) {
         logoFileInput.style.cssText = 'flex: 1; font-size: 0.85rem;';
         bindImageUpload(logoFileInput, ([image]) => {
             logoHiddenInput.value = image;
+            renderSponsorOrderPreview();
             logoPreview.innerHTML = '';
             const previewImg = document.createElement('img');
             previewImg.src = image;
