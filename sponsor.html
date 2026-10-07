@@ -82,21 +82,33 @@
             box-shadow: var(--card-shadow);
         }
 
-        /* 協賛:ロゴ表示エリアの高さはロゴサイズに合わせる(「中」はカード自体を低くする) */
-        .sponsor-logo-area {
-            height: 180px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* 協賛:横画面は4列、縦画面は2列。「大」は2列分の幅を使い、横画面で「大」2個・「中」4個、縦画面でその半分が並ぶ */
+        .sponsor-grid.sponsor-grid-logo {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
         }
 
-        .sponsor-logo-area.size-medium {
-            height: 90px;
+        .sponsor-grid-logo > .sponsor-card:not(.sponsor-card-medium) {
+            grid-column: span 2;
+        }
+
+        @media (orientation: portrait) {
+            .sponsor-grid.sponsor-grid-logo {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+            }
+
+            .sponsor-grid-logo > .sponsor-card {
+                padding: 15px 12px;
+            }
         }
 
         /* 協賛:「中」は「大」と同じ列にそろえたまま、新しい行から並べ始める */
         .sponsor-card:not(.sponsor-card-medium) + .sponsor-card-medium {
             grid-column-start: 1;
+        }
+
+        .sponsor-logo-area {
+            width: 100%;
         }
 
         .sponsor-card a {
@@ -148,10 +160,11 @@
             }
         }
 
-        /* ロゴ表示枠:「大」は正方形、「中」は幅が同じで高さが半分。長辺を枠に合わせて縮小表示する */
+        /* ロゴ表示枠:カード幅いっぱいで横2:縦1(「大」は「中」の縦横2倍)。ロゴは枠に収まるよう縮小表示する */
         .sponsor-logo-frame {
-            width: 180px;
-            height: 180px;
+            position: relative;
+            width: 100%;
+            aspect-ratio: 2 / 1;
             border-radius: 12px;
             background: white;
             border: 1px solid var(--glass-border);
@@ -162,13 +175,11 @@
             overflow: hidden;
         }
 
-        .sponsor-logo-frame.size-medium {
-            height: 90px;
-        }
-
         .sponsor-logo-frame img {
-            max-width: 100%;
-            max-height: 100%;
+            position: absolute;
+            inset: 12px;
+            width: calc(100% - 24px);
+            height: calc(100% - 24px);
             object-fit: contain;
         }
 

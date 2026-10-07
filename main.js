@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             if (type === '協賛') {
                                 const large = groups[type].filter(s => s.size === 'large');
                                 const medium = groups[type].filter(s => s.size !== 'large');
-                                gridsHtml = renderGrid(type, [...large, ...medium]);
+                                gridsHtml = renderGrid(type, [...large, ...medium], ' sponsor-grid-logo');
                             } else {
                                 gridsHtml = renderGrid(type, groups[type], type === '主催' ? ' sponsor-grid-organizer' : '');
                             }
