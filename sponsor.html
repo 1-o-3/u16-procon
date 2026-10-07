@@ -48,17 +48,19 @@
             border-bottom: 2px solid var(--primary-light);
         }
 
-        /* カードは一定幅で並べ、行ごとに中央揃え(最後の行が端数でも中央に寄せる) */
+        /* カードは一定幅の列で並べ、列全体を中央揃え(端数の行は左寄せで上の行と列を揃える) */
         .sponsor-grid {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(0, 220px));
             justify-content: center;
             gap: 20px;
         }
 
-        .sponsor-grid > .sponsor-card {
-            flex: 0 0 220px;
-            max-width: 100%;
+        /* 主催は名称の長さに合わせてカード幅を広げるため折り返し配置 */
+        .sponsor-grid.sponsor-grid-organizer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .sponsor-card {
