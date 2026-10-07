@@ -70,6 +70,17 @@ function dataUrlToBlobUrl(dataUrl) {
     }
 }
 
+// 本文中の http(s)://〜 を新しいタブで開くリンクにする(本文はHTMLとして解釈させずにそのまま表示する)
+function linkifyText(text) {
+    const escaped = String(text || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // URLの直後に続く全角文字・括弧、末尾の句読点はURLに含めない
+    return escaped.replace(/https?:\/\/[^\s<>"'()　-ヿ一-鿿＀-￯]+/g, url => {
+        const trailing = (url.match(/[.,;:!?]+$/) || [''])[0];
+        const href = url.slice(0, url.length - trailing.length);
+        return `<a href="${href}" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline; word-break: break-all;">${href}</a>${trailing}`;
+    });
+}
+
 // ==============================
 // Top Navigation (共通上部タブメニュー)
 // ==============================
@@ -248,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 </div>
                 <h3 style="font-size: 1.2rem; color: var(--text-main); font-weight: 700;">${item.title}</h3>
-                <p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap;">${item.content}</p>
+                <p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap;">${linkifyText(item.content)}</p>
             `;
 
             if (hasSubinfo) {

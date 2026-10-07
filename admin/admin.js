@@ -1409,6 +1409,7 @@ function initFixedLogic() {
     }
 
     initSponsorOrderPreview();
+    initStakeholderGroups();
 
     const addToolBtn = document.getElementById('add-tool-btn');
     if (addToolBtn) {
@@ -1619,6 +1620,10 @@ function requestAddCard(btn, listId, addFn) {
     const list = document.getElementById(listId);
     if (!list) return;
     watchAddButton(btn, list);
+
+    // 閉じているグループ(主催・協賛など)は、追加したフォームや未入力の項目が見えるように開く
+    const group = list.closest('.stakeholder-group');
+    if (group) setStakeholderGroupOpen(group, true);
 
     const incomplete = getIncompleteCards(list);
     if (incomplete.length === 0) {
@@ -1838,6 +1843,34 @@ function initSponsorOrderPreview() {
     };
     preview.addEventListener('pointerup', finishDrag);
     preview.addEventListener('pointercancel', finishDrag);
+}
+
+// ==============================
+// 主催・共催・協賛・後援・協力のグループ開閉(見出しクリックで ▷閉 / ▽開)
+// ==============================
+function setStakeholderGroupOpen(group, open) {
+    group.classList.toggle('open', open);
+    const toggle = group.querySelector('.stakeholder-group-toggle');
+    if (toggle) toggle.setAttribute('aria-expanded', String(open));
+}
+
+function toggleStakeholderGroup(toggle) {
+    const group = toggle.closest('.stakeholder-group');
+    setStakeholderGroupOpen(group, !group.classList.contains('open'));
+}
+
+function initStakeholderGroups() {
+    document.querySelectorAll('.stakeholder-group').forEach(group => {
+        const list = group.querySelector('.stakeholder-list');
+        const count = group.querySelector('.stakeholder-group-count');
+        if (!list || !count) return;
+        // 閉じていても登録件数がわかるよう見出しに件数を出す
+        const updateCount = () => { count.textContent = `(${list.children.length}件)`; };
+        updateCount();
+        new MutationObserver(updateCount).observe(list, { childList: true });
+        // 保存時に閉じたグループ内の必須項目が未入力だと入力欄へ移動できないため、開いて見せる
+        list.addEventListener('invalid', () => setStakeholderGroupOpen(group, true), true);
+    });
 }
 
 function addStakeholderCard(type, data = {}) {
