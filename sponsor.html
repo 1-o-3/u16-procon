@@ -94,9 +94,9 @@
             height: 90px;
         }
 
-        /* 協賛:「大」の並びと「中」の並びの間隔 */
-        .sponsor-grid + .sponsor-grid {
-            margin-top: 20px;
+        /* 協賛:「中」は「大」と同じ列にそろえたまま、新しい行から並べ始める */
+        .sponsor-card:not(.sponsor-card-medium) + .sponsor-card-medium {
+            grid-column-start: 1;
         }
 
         .sponsor-card a {

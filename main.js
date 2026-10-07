@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 ? `<a href="${s.url}" target="_blank" rel="noopener">${nameHtml}</a>`
                                 : nameHtml;
                             // ロゴエリアの高さをロゴサイズに合わせる(同じサイズ同士で並べるので企業名の位置はそろう)
-                            return `<div class="sponsor-card glass"><div class="sponsor-logo-area ${sizeClass}">${logoHtml}</div>${sponsorNameHtml}</div>`;
+                            return `<div class="sponsor-card glass${s.size === 'large' ? '' : ' sponsor-card-medium'}"><div class="sponsor-logo-area ${sizeClass}">${logoHtml}</div>${sponsorNameHtml}</div>`;
                         };
 
                         const renderGrid = (type, list, extraClass = '') =>
@@ -458,12 +458,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         order.forEach(type => {
                             if (!groups[type] || groups[type].length === 0) return;
                             let gridsHtml;
-                            // 協賛はロゴサイズでカードの大きさが変わるため、登録順に関わらず「大」→「中」の順に段を分けて並べる
+                            // 協賛はロゴサイズでカードの大きさが変わるため、登録順に関わらず「大」→「中」の順に並べる。
+                            // 縦の列をそろえるため同じグリッドに入れ、「中」は CSS で新しい行から始める
                             if (type === '協賛') {
                                 const large = groups[type].filter(s => s.size === 'large');
                                 const medium = groups[type].filter(s => s.size !== 'large');
-                                gridsHtml = (large.length ? renderGrid(type, large) : '')
-                                    + (medium.length ? renderGrid(type, medium, ' sponsor-grid-medium') : '');
+                                gridsHtml = renderGrid(type, [...large, ...medium]);
                             } else {
                                 gridsHtml = renderGrid(type, groups[type], type === '主催' ? ' sponsor-grid-organizer' : '');
                             }
