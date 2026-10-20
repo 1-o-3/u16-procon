@@ -48,8 +48,19 @@ CREATE TABLE IF NOT EXISTS news_table (
     past_images TEXT, -- JSON文字列
     participant_comments TEXT, -- JSON文字列
     poster_image TEXT,
+    fiscal_year INTEGER, -- 開催年度 (4/1〜翌3/31。2026年度=2026)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 3-2. 過去の開催情報の写真 (カルーセル用・1記事最大5枚)
+-- D1は1行あたり約2MBまでのため、写真は1枚1行で保存する
+CREATE TABLE IF NOT EXISTS news_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    news_id INTEGER NOT NULL,
+    position INTEGER NOT NULL,
+    data TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_news_images_news_id ON news_images (news_id);
 
 -- 4. 固定コンテンツ テーブル (ABOUT, 部門紹介, ツール, SNS, スポンサー)
 CREATE TABLE IF NOT EXISTS fixed_content_table (

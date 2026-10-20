@@ -85,19 +85,30 @@ function loadImage(src) {
 }
 
 // 大きい画像は長辺 IMAGE_MAX_DIMENSION px のJPEGに縮小する(小さい画像はそのまま。PNGの透過も維持される)
+// 縮小しても INLINE_IMAGE_MAX_LENGTH を超える場合は、収まるまで画質とサイズを段階的に下げる
+// (データベースは1行あたり約2MBまでのため、1枚の大きさを確実に抑える)
 async function shrinkImageDataUrl(dataUrl) {
     if (dataUrl.length <= INLINE_IMAGE_MAX_LENGTH) return dataUrl;
 
     const img = await loadImage(dataUrl);
-    const ratio = Math.min(1, IMAGE_MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(img.naturalWidth * ratio);
-    canvas.height = Math.round(img.naturalHeight * ratio);
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff'; // PNGの透過部分がJPEG化で黒くならないように
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.85);
+    let maxDimension = IMAGE_MAX_DIMENSION;
+    let quality = 0.85;
+    let result = dataUrl;
+    for (let attempt = 0; attempt < 8; attempt++) {
+        const ratio = Math.min(1, maxDimension / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.naturalWidth * ratio);
+        canvas.height = Math.round(img.naturalHeight * ratio);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff'; // PNGの透過部分がJPEG化で黒くならないように
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        result = canvas.toDataURL('image/jpeg', quality);
+        if (result.length <= INLINE_IMAGE_MAX_LENGTH) break;
+        quality = Math.max(0.6, quality - 0.1);
+        maxDimension = Math.round(maxDimension * 0.85);
+    }
+    return result;
 }
 
 function detectUploadType(file) {
@@ -119,7 +130,7 @@ async function readUploadAsImage(file) {
 
     if (type === 'application/pdf') {
         const bytes = new Uint8Array(await file.arrayBuffer());
-        return pdfToImageDataUrl(bytes);
+        return shrinkImageDataUrl(await pdfToImageDataUrl(bytes));
     }
     return shrinkImageDataUrl(await readFileAsDataUrl(file));
 }

@@ -64,8 +64,17 @@ export async function onRequest(context) {
                 past_images TEXT,
                 participant_comments TEXT,
                 poster_image TEXT,
+                fiscal_year INTEGER,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS news_images (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                news_id INTEGER NOT NULL,
+                position INTEGER NOT NULL,
+                data TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_news_images_news_id ON news_images (news_id);
 
             CREATE TABLE IF NOT EXISTS fixed_content_table (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -555,6 +555,14 @@ function getFiscalYearRange(date = new Date()) {
 // ==============================
 let u16CarouselCounter = 0;
 
+// 大会の様子の写真(最大5枚)。登録されていなければ記事の画像を使う
+function getCarouselImages(item) {
+    const parse = v => v ? (typeof v === 'string' ? JSON.parse(v) : v) : [];
+    const pastImgs = parse(item.past_images);
+    const imgs = (Array.isArray(pastImgs) && pastImgs.length > 0) ? pastImgs : parse(item.images);
+    return Array.from(new Set(Array.isArray(imgs) ? imgs : [])).slice(0, 5);
+}
+
 function createCarouselHtml(images) {
     if (!images || !Array.isArray(images) || images.length === 0) return '';
     // 最大5枚までに制限
@@ -695,9 +703,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
+        // 今期会期内(4/1〜翌3/31)の大会だけを表示する。
+        // 来期の大会(管理画面で今期の大会終了後に登録したもの)は、年度が替わってから表示される
+        let fiscalEvent = currentEvents.find(item => {
+            if (item.fiscal_year) return Number(item.fiscal_year) === fiscalYear;
+            if (!item.start_date) return true; // 日程未確定でも今期の枠として扱う
+            const d = new Date(item.start_date);
+            return d >= fiscalStart && d <= fiscalEnd;
+        });
+
         // もし「今期の開催情報」にデータがない場合、または過去にアーカイブ移行された場合、
         // 過去の開催情報からも今期の会期内(4/1〜翌3/31)にある大会を補完して探す
-        if (currentEvents.length === 0) {
+        if (!fiscalEvent) {
             try {
                 const pastRes = await fetch('/api/news?category=' + encodeURIComponent('過去の開催情報'));
                 if (pastRes.ok) {
@@ -708,20 +725,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return d >= fiscalStart && d <= fiscalEnd;
                     });
                     if (inFiscal.length > 0) {
-                        currentEvents = inFiscal;
+                        fiscalEvent = inFiscal[0];
                     }
                 }
             } catch (err) {
                 console.log("Could not check past events for fiscal year", err);
             }
         }
-
-        // 今期会期内の大会があるかチェック
-        const fiscalEvent = currentEvents.find(item => {
-            if (!item.start_date) return true; // 日程未確定でも今期の枠として扱う
-            const d = new Date(item.start_date);
-            return d >= fiscalStart && d <= fiscalEnd;
-        }) || currentEvents[0];
 
         if (!fiscalEvent) {
             container.innerHTML = `
@@ -823,10 +833,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // カルーセル画像 (最大5枚)
-        const pastImgs = item.past_images ? (typeof item.past_images === 'string' ? JSON.parse(item.past_images) : item.past_images) : [];
-        const mainImgs = item.images ? (typeof item.images === 'string' ? JSON.parse(item.images) : item.images) : [];
-        const combinedImgs = [...pastImgs, ...mainImgs];
-        const uniqueImgs = Array.from(new Set(combinedImgs)).slice(0, 5);
+        const uniqueImgs = getCarouselImages(item);
         if (uniqueImgs.length > 0) {
             html += `
                 <div style="margin-top: 20px;">
@@ -938,10 +945,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // カルーセル画像 (最大5枚)
-            const pastImgs = item.past_images ? (typeof item.past_images === 'string' ? JSON.parse(item.past_images) : item.past_images) : [];
-            const mainImgs = item.images ? (typeof item.images === 'string' ? JSON.parse(item.images) : item.images) : [];
-            const combinedImgs = [...pastImgs, ...mainImgs];
-            const uniqueImgs = Array.from(new Set(combinedImgs)).slice(0, 5);
+            const uniqueImgs = getCarouselImages(item);
 
             if (uniqueImgs.length > 0) {
                 html += `

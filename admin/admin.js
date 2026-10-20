@@ -37,8 +37,36 @@ async function runWithButtonLock(button, busyText, task) {
     }
 }
 
-// Vercelのサーバーレス関数はリクエスト本文が約4.5MBを超えると受け付けないため、送信前に確認する
-const MAX_REQUEST_BODY_LENGTH = 4.3 * 1024 * 1024;
+// Cloudflare Pages Functions のリクエスト本文の上限(100MB)より十分小さい値で、送信前に確認する。
+// (写真は1枚ずつ縮小済みで、大会の様子5枚+ポスター等でも数MB程度に収まる)
+const MAX_REQUEST_BODY_LENGTH = 25 * 1024 * 1024;
+
+// 年度(4/1〜翌3/31)。2026年度 = 2026/04/01〜2027/03/31。main.js側の getFiscalYearRange と同じ考え方
+function getFiscalYear(date = new Date()) {
+    return date.getMonth() + 1 >= 4 ? date.getFullYear() : date.getFullYear() - 1;
+}
+
+// 'YYYY-MM-DD' (後ろに時刻が付いていても可) をその日の0時(ブラウザの時刻)として読む
+function toLocalDate(val) {
+    const m = String(val || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
+
+// 開催情報の年度。開催日も年度も無いもの(日程未定で登録した以前のデータ)は今期として扱う
+function newsFiscalYear(item) {
+    if (item.fiscal_year) return Number(item.fiscal_year);
+    const d = toLocalDate(item.start_date);
+    return d ? getFiscalYear(d) : getFiscalYear();
+}
+
+// 開催日を過ぎていれば開催済み(開催日が無い場合は過去の開催情報としてアーカイブ済みかどうか)
+function isEventHeld(item) {
+    const d = toLocalDate(item.start_date);
+    if (!d) return item.is_past === true;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return d < today;
+}
 
 // 画像アップロード欄(PDF/JPEG/PNG)共通の処理。PDFは1ページ目を画像に変換してから onLoaded に渡す。
 function bindImageUpload(input, onLoaded) {
@@ -1154,9 +1182,12 @@ async function fetchNewsData() {
     applySingleCurrentMode();
 }
 
-// 今期の開催情報は常に1件だけ。一覧から選んで編集するのではなく、HPに表示中の1件を最初からフォームに読み込んで編集する。
-// 1件も無いときだけ新規投稿になる(大会終了後に「過去の開催情報」へアーカイブすると、次の大会を登録できる)。
+// 開催情報は年度(4/1〜翌3/31)ごとに1件だけ。一覧から選んで編集するのではなく、対象の1件を最初からフォームに読み込んで編集する。
+// ・今期の大会がまだ開催前(または未登録)なら、今期の大会を編集する
+// ・今期の大会が開催済みなら、来期の大会を編集する。来期の情報は年度が替わる(4/1)と自動でHPの「今期の開催情報」に表示される
+//   (開催済みの今期の大会は「過去の開催情報」に自動で表示され、写真や参加者の声はそちらで編集する)
 const SINGLE_NEWS_CATEGORY = '今期の開催情報';
+let editingFiscalYear = getFiscalYear();
 
 function applySingleCurrentMode() {
     const isSingle = currentNewsCategory === SINGLE_NEWS_CATEGORY;
@@ -1167,15 +1198,37 @@ function applySingleCurrentMode() {
     extras.innerHTML = '';
     if (!isSingle) return;
 
-    // APIは新しい順に返す。先頭がHPに表示中の1件、残りは以前の重複投稿
-    const [current, ...leftovers] = newsData;
+    const currentFiscalYear = getFiscalYear();
+    // APIは新しい順に返す
+    const currentEvent = newsData.find(n => newsFiscalYear(n) === currentFiscalYear);
+    const currentHeld = currentEvent && isEventHeld(currentEvent);
+    editingFiscalYear = currentHeld ? currentFiscalYear + 1 : currentFiscalYear;
+
+    // 先頭が編集対象の1件、残りは同じ年度の以前の重複投稿
+    const [current, ...leftovers] = newsData.filter(n => newsFiscalYear(n) === editingFiscalYear);
+    const fyRange = `${editingFiscalYear}/04/01〜${editingFiscalYear + 1}/03/31`;
+
+    let heldText = '';
+    if (currentHeld) {
+        const d = toLocalDate(currentEvent.start_date);
+        const dateText = d ? `${d.getMonth() + 1}月${d.getDate()}日` : '(日付未設定)';
+        heldText = `今期の開催は${dateText}でした。\n` +
+            `ここでは来期（${editingFiscalYear}年度：${fyRange}）の開催情報を編集します。来期の情報は${editingFiscalYear}年4月1日から自動でHPの「今期の開催情報」に表示されます。` +
+            '(今期の大会の写真・参加者の声は「過去の開催情報」から編集できます)\n';
+    }
+
     if (current) {
         openEditNews(current.id, { scroll: false });
         document.getElementById('news-cancel-btn').style.display = 'none';
-        msg.textContent = '✏️ HPに表示中の大会情報を編集します。内容を変更して「更新する」を押してください。(今期の開催情報は1件のみです。大会終了後に「過去の開催情報」からアーカイブすると、次の大会を登録できます)';
+        msg.textContent = heldText + (currentHeld
+            ? '✏️ 登録済みの来期の大会情報を編集します。内容を変更して「更新する」を押してください。'
+            : `✏️ HPに表示中の今期（${editingFiscalYear}年度：${fyRange}）の大会情報を編集します。内容を変更して「更新する」を押してください。(開催情報は年度ごとに1件です。今期の大会が終わると、ここで来期の大会を編集できるようになります)`);
     } else {
-        msg.textContent = '📝 今期の大会情報はまだ登録されていません。入力して「投稿する」を押すとHPに表示されます。';
+        msg.textContent = heldText + (currentHeld
+            ? '📝 来期の大会情報はまだ登録されていません。入力して「投稿する」を押すと保存されます(4月1日にHPへ表示されます)。'
+            : `📝 今期（${editingFiscalYear}年度：${fyRange}）の大会情報はまだ登録されていません。入力して「投稿する」を押すとHPに表示されます。`);
     }
+    msg.style.whiteSpace = 'pre-line';
     document.getElementById('news-form-title').style.display = 'none';
 
     if (leftovers.length > 0) {
@@ -1354,12 +1407,18 @@ async function handleNewsSubmit(e) {
     let poster_image = currentPosterBase64;
     let past_images = null;
     let is_past = false;
+    let fiscal_year = null;
+    const existingItem = id
+        ? (newsData.find(n => String(n.id) === String(id)) || (currentEventsForMigration || []).find(n => String(n.id) === String(id)))
+        : null;
 
     if (currentNewsCategory === '過去の開催情報') {
         is_past = true;
-        past_images = images; // 過去の様子写真(カルーセル用)
+        // 大会の様子の写真(カルーセル用・最大5枚)。元の画像もカルーセルに読み込んでいるので、
+        // 同じ写真を images にも重複して保存しない(重複すると保存できる容量を超えてしまう)
+        past_images = images;
+        images = null;
         // 元記事がある場合は既存のカテゴリを尊重(今期の開催情報または過去の開催情報)
-        const existingItem = id ? newsData.find(n => String(n.id) === String(id)) : null;
         if (existingItem) {
             category = existingItem.category || '過去の開催情報';
             if (!poster_image && existingItem.poster_image) {
@@ -1369,23 +1428,36 @@ async function handleNewsSubmit(e) {
             category = '過去の開催情報';
         }
     } else {
-        past_images = null;
+        // 今期の開催情報の編集では写真欄を扱わないため、登録済みの大会の様子の写真はそのまま残す
+        past_images = existingItem ? (existingItem.past_images || null) : null;
+    }
+
+    if (category === SINGLE_NEWS_CATEGORY && currentNewsCategory === SINGLE_NEWS_CATEGORY) {
+        fiscal_year = editingFiscalYear;
+        // 開催日は編集中の年度(4/1〜翌3/31)の範囲内でなければならない
+        const d = toLocalDate(start_date);
+        if (d && getFiscalYear(d) !== editingFiscalYear) {
+            const label = editingFiscalYear === getFiscalYear() ? '今期' : '来期';
+            alert(`開催日は${label}（${editingFiscalYear}年度：${editingFiscalYear}/04/01〜${editingFiscalYear + 1}/03/31）の範囲で入力してください。`);
+            return;
+        }
     }
 
     const method = id ? 'PUT' : 'POST';
     const payload = {
         id, category, title, content,
         start_date, start_time, end_time, is_tentative, location, map_url, application_url, overview_url, prefecture,
-        target_age, participants, divisions, images, poster_image, past_images, is_past, participant_comments
+        target_age, participants, divisions, images, poster_image, past_images, is_past, participant_comments, fiscal_year
     };
 
     // 同じ内容の連続投稿を防ぐ(サーバー側でも同じチェックを行う)
     if (method === 'POST') {
-        if (category === SINGLE_NEWS_CATEGORY && newsData.length > 0) {
-            alert('今期の開催情報は1件のみです。表示中の大会情報を編集してください。');
+        if (category === SINGLE_NEWS_CATEGORY && newsData.some(n => newsFiscalYear(n) === editingFiscalYear)) {
+            alert(`${editingFiscalYear}年度の開催情報は既に登録されています。登録済みの大会情報を編集してください。`);
             return;
         }
-        const latest = newsData[0];
+        // 開催情報は年度ごとに1件のため、前年度と同じタイトル・概要でも登録できるようにする
+        const latest = category === SINGLE_NEWS_CATEGORY ? null : newsData[0];
         if (latest && latest.title === title && (latest.content || '') === (content || '')) {
             alert('直前の投稿と同じ内容のため、投稿しませんでした。');
             return;
