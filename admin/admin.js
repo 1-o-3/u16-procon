@@ -68,6 +68,74 @@ function showImagePreview(container, src, height = '100px') {
     renderPdfImages(container);
 }
 
+// ニュース・開催情報用の画像プレビュー表示(複数枚・個別削除ボタン付き)
+function renderNewsImagePreviews() {
+    const previewContainer = document.getElementById('image-preview-container');
+    if (!previewContainer) return;
+    previewContainer.innerHTML = '';
+    const maxFiles = currentNewsCategory === '過去の開催情報' ? 5 : 1;
+
+    let countEl = document.getElementById('news-image-count');
+    if (!countEl) {
+        countEl = document.createElement('div');
+        countEl.id = 'news-image-count';
+        countEl.style.cssText = 'font-size: 0.85rem; color: var(--text-dim); margin-top: 6px; width: 100%;';
+        previewContainer.parentNode.insertBefore(countEl, previewContainer.nextSibling);
+    }
+    countEl.textContent = `登録画像: ${currentImagesBase64.length} / ${maxFiles} 枚 (カルーセル表示)`;
+
+    currentImagesBase64.forEach((src, idx) => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position: relative; display: inline-block; margin: 4px;';
+
+        const img = document.createElement('img');
+        img.src = src;
+        img.style.cssText = 'height: 75px; width: 75px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--primary-light); background: #f8f9fa;';
+        wrap.appendChild(img);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.innerHTML = '×';
+        delBtn.title = 'この画像を削除';
+        delBtn.style.cssText = 'position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; background: #ff4757; color: white; border: none; border-radius: 50%; font-size: 14px; line-height: 1; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.25);';
+        delBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            currentImagesBase64.splice(idx, 1);
+            renderNewsImagePreviews();
+        });
+        wrap.appendChild(delBtn);
+
+        previewContainer.appendChild(wrap);
+    });
+    renderPdfImages(previewContainer);
+}
+
+let currentEventsForMigration = [];
+async function loadCurrentEventsForMigration() {
+    try {
+        const res = await fetch('/api/news?category=' + encodeURIComponent('今期の開催情報'));
+        if (res.ok) {
+            currentEventsForMigration = await res.json();
+        }
+    } catch (e) {
+        console.error('Failed to load current events for migration', e);
+        const local = localStorage.getItem('mockNewsData');
+        if (local) {
+            const all = JSON.parse(local);
+            currentEventsForMigration = all.filter(n => n.category === '今期の開催情報');
+        }
+    }
+    const sel = document.getElementById('news-migration-select');
+    if (sel) {
+        sel.innerHTML = '<option value="">大会を選択してください...</option>';
+        (currentEventsForMigration || []).forEach(n => {
+            const dateStr = n.start_date ? ` (${String(n.start_date).split('T')[0]})` : '';
+            sel.innerHTML += `<option value="${n.id}">${n.title}${dateStr}</option>`;
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Check login state (simple session storage)
     if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
@@ -215,7 +283,11 @@ function switchAdminSection(section) {
         document.getElementById('news-cancel-btn').style.display = 'none';
         renderSubdivisions(["競技部門 (U-16)"]);
         syncCompSubdivisions();
+        renderNewsImagePreviews();
         fetchNewsData();
+        if (cfg.newsCategory === '過去の開催情報') {
+            loadCurrentEventsForMigration();
+        }
     }
 
     if (cfg.fixedCategory) {
@@ -508,16 +580,47 @@ function initNewsLogic() {
                 return;
             }
             document.getElementById('news-id').value = id;
-            const item = newsData.find(n => String(n.id) === String(id));
-            if (item && previewBox) {
-                previewBox.style.display = 'block';
-                const d = item.start_date ? String(item.start_date).split('T')[0] : '未設定';
-                const t = item.start_time || '';
-                previewBox.innerHTML = `
-                    <strong style="color: var(--primary); font-size: 1.1rem; display: block; margin-bottom: 5px;">${item.title}</strong>
-                    <span style="font-size: 0.9rem; display: block; margin-bottom: 10px;">📅 ${d} ${t}</span>
-                    <div style="white-space: pre-wrap;">${item.content}</div>
-                `;
+            const item = (currentEventsForMigration || []).find(n => String(n.id) === String(id)) || newsData.find(n => String(n.id) === String(id));
+            if (item) {
+                // 自動反映：選んだ大会の各情報をフォームに展開して、その場で編集できるようにする
+                document.getElementById('news-title').value = item.title || '';
+                document.getElementById('news-content').value = item.content || '';
+                if (item.start_date) {
+                    document.getElementById('news-start-date').value = new Date(item.start_date).toISOString().split('T')[0];
+                }
+                document.getElementById('news-start-time').value = item.start_time || '';
+                document.getElementById('news-end-time').value = item.end_time || '';
+                document.getElementById('news-is-tentative').checked = item.is_tentative || false;
+                document.getElementById('news-location').value = item.location || '';
+                document.getElementById('news-map-url').value = item.map_url || '';
+                document.getElementById('news-overview-url').value = item.overview_url || '';
+                document.getElementById('news-target-age').value = item.target_age || '';
+                document.getElementById('news-participants').value = item.participants || '';
+
+                // 画像の引き継ぎ
+                const pastImgs = item.past_images ? (typeof item.past_images === 'string' ? JSON.parse(item.past_images) : item.past_images) : [];
+                const mainImgs = item.images ? (typeof item.images === 'string' ? JSON.parse(item.images) : item.images) : [];
+                currentImagesBase64 = pastImgs.length > 0 ? pastImgs : (mainImgs || []);
+                renderNewsImagePreviews();
+
+                currentPosterBase64 = item.poster_image || null;
+                const posterContainer = document.getElementById('poster-preview-container');
+                posterContainer.innerHTML = '';
+                if (currentPosterBase64) showImagePreview(posterContainer, currentPosterBase64);
+
+                document.getElementById('news-submit-btn').textContent = '過去の大会としてアーカイブする';
+                document.getElementById('news-cancel-btn').style.display = 'inline-block';
+
+                if (previewBox) {
+                    previewBox.style.display = 'block';
+                    const d = item.start_date ? String(item.start_date).split('T')[0] : '未設定';
+                    const t = item.start_time || '';
+                    previewBox.innerHTML = `
+                        <strong style="color: var(--primary); font-size: 1.05rem; display: block; margin-bottom: 5px;">✅ 「${item.title}」の情報をフォームに読み込みました</strong>
+                        <span style="font-size: 0.85rem; color: var(--text-dim); display: block;">開催日: ${d} ${t} / 会場: ${item.location || '未設定'}</span>
+                        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 6px;">下の各入力欄で内容を確認・修正し、写真（カルーセル用・最大5枚）や参加人数、参加者の声を追加して「過去の大会としてアーカイブする」を押してください。</p>
+                    `;
+                }
             }
         });
     }
@@ -570,10 +673,17 @@ function initNewsLogic() {
 
     bindImageUpload(document.getElementById('news-image-input'), (images) => {
         const maxFiles = currentNewsCategory === '過去の開催情報' ? 5 : 1;
-        currentImagesBase64 = images.slice(0, maxFiles);
-        const previewContainer = document.getElementById('image-preview-container');
-        previewContainer.innerHTML = '';
-        currentImagesBase64.forEach(src => showImagePreview(previewContainer, src, '60px'));
+        if (maxFiles === 1) {
+            currentImagesBase64 = images.slice(0, 1);
+        } else {
+            // 過去開催情報は最大5枚まで追加
+            const combined = [...currentImagesBase64, ...images];
+            if (combined.length > 5) {
+                alert('写真は最大5枚まで投稿できます。先頭5枚を保持します。');
+            }
+            currentImagesBase64 = combined.slice(0, 5);
+        }
+        renderNewsImagePreviews();
     });
 
     bindImageUpload(document.getElementById('news-poster-input'), ([image]) => {
@@ -590,16 +700,16 @@ function initNewsLogic() {
     document.getElementById('news-cancel-btn').addEventListener('click', () => {
         document.getElementById('news-form').reset();
         currentImagesBase64 = [];
-        document.getElementById('image-preview-container').innerHTML = '';
+        renderNewsImagePreviews();
         currentPosterBase64 = null;
         document.getElementById('poster-preview-container').innerHTML = '';
         document.getElementById('comments-container').innerHTML = '';
         const previewBox = document.getElementById('migration-preview-box');
         if(previewBox) previewBox.style.display = 'none';
         document.getElementById('news-id').value = '';
-        document.getElementById('news-submit-btn').textContent = '投稿する';
+        document.getElementById('news-submit-btn').textContent = currentNewsCategory === '過去の開催情報' ? '過去の大会としてアーカイブする' : '投稿する';
         document.getElementById('news-cancel-btn').style.display = 'none';
-        updateNewsFormVisibility(currentNewsCategory);
+        updateNewsFormVisibility(currentNewsCategory, false);
         renderSubdivisions(["競技部門 (U-16)"]);
         syncCompSubdivisions();
     });
@@ -748,7 +858,7 @@ async function refreshSubdivisions() {
 let qaData = [];
 let newsData = [];
 
-function updateNewsFormVisibility(category) {
+function updateNewsFormVisibility(category, isEditing = false) {
     const isCurrent = category === '今期の開催情報';
     const isPast = category === '過去の開催情報';
     const isNotice = category === 'お知らせ';
@@ -760,15 +870,17 @@ function updateNewsFormVisibility(category) {
     // 「詳細を見る」ボタン用URL(overview_url)は今期の開催情報でも公開側が表示に使うため、ここで入力できるようにする
     s('.field-overview-url').display = isCurrent ? 'block' : 'none';
 
-    s('.field-dates').display = isCurrent ? 'block' : 'none';
+    // 開催日：今期および過去でも表示して編集可能に
+    s('.field-dates').display = (isCurrent || isPast) ? 'block' : 'none';
     s('#news-auto-migrate-text').display = isCurrent ? 'inline' : 'none';
-    s('.field-time-tentative').display = 'block';
+    s('.field-time-tentative').display = isCurrent ? 'block' : (isPast ? 'block' : 'none');
 
-    s('.field-location').display = isCurrent ? 'block' : 'none';
-    s('.field-map-url').display = isCurrent ? 'block' : 'none';
+    // 開催地・マップ：今期および過去でも表示して編集可能に
+    s('.field-location').display = (isCurrent || isPast) ? 'block' : 'none';
+    s('.field-map-url').display = (isCurrent || isPast) ? 'block' : 'none';
     s('.field-application').display = isCurrent ? 'block' : 'none';
 
-    // 参加人数は「過去の記録」として値を残すための項目なので、アーカイブ時のみ入力欄を出す
+    // 参加人数：過去の記録として編集可能
     s('.field-participants-group').display = (isCurrent || isPast) ? 'flex' : 'none';
     s('.field-target-age').display = isCurrent ? 'block' : 'none';
     s('.field-participants').display = isPast ? 'block' : 'none';
@@ -786,7 +898,7 @@ function updateNewsFormVisibility(category) {
 
     if (imageLabel && imageInput) {
         if (isPast) {
-            imageLabel.innerHTML = '大会の様子（画像5枚まで） <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span>';
+            imageLabel.innerHTML = '大会の様子（画像5枚まで・カルーセル表示） <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span>';
             imageInput.multiple = true;
         } else {
             imageLabel.innerHTML = '画像投稿（1枚） <span style="font-size: 0.8rem; color: var(--text-dim);">※最大5MB程度まで</span>';
@@ -794,32 +906,26 @@ function updateNewsFormVisibility(category) {
         }
     }
 
-    s('.field-migration').display = isPast ? 'block' : 'none';
+    // アーカイブ大会選択：新規登録時のみ表示、編集時は隠す
+    s('.field-migration').display = (isPast && !isEditing) ? 'block' : 'none';
     s('.field-comments').display = isPast ? 'block' : 'none';
 
-    if (isPast) {
-        s('.field-common').display = 'none';
-        s('.field-content').display = 'none';
-        
-        s('#news-form').display = 'block';
-        s('#news-form-title').display = 'block';
-        s('#past-notice-msg').display = 'block';
+    // タイトルと本文は常に表示（過去記事でも直接編集可能！）
+    s('.field-common').display = 'block';
+    s('.field-content').display = 'block';
+    s('#news-form').display = 'block';
+    s('#news-form-title').display = 'block';
 
-        // populate migration select
-        const sel = document.getElementById('news-migration-select');
-        if (sel) {
-            sel.innerHTML = '<option value="">大会を選択してください...</option>';
-            const currentEvents = newsData.filter(n => n.category === '今期の開催情報' && !n.is_past);
-            currentEvents.forEach(n => {
-                sel.innerHTML += `<option value="${n.id}">${n.title}</option>`;
-            });
+    const noticeEl = document.getElementById('past-notice-msg');
+    if (noticeEl) {
+        if (isPast) {
+            noticeEl.style.display = 'block';
+            noticeEl.textContent = isEditing
+                ? '※ 過去の開催情報を編集しています。各項目を変更して「更新する」を押してください。'
+                : '※ 今期開催された大会を選んで引き継ぐか、各入力欄に直接入力して「過去の大会としてアーカイブする」を押してください。';
+        } else {
+            noticeEl.style.display = 'none';
         }
-    } else {
-        s('.field-common').display = 'block';
-        s('.field-content').display = 'block';
-        s('#news-form').display = 'block';
-        s('#news-form-title').display = 'block';
-        s('#past-notice-msg').display = 'none';
     }
 
     updateCurrentRequiredFields();
@@ -1127,9 +1233,12 @@ function openEditNews(id, { scroll = true } = {}) {
     const item = newsData.find(n => String(n.id) === String(id));
     if (!item) return;
 
+    // 編集モードでフォームの表示を更新(過去開催でも全フィールド表示)
+    updateNewsFormVisibility(currentNewsCategory, true);
+
     document.getElementById('news-id').value = item.id;
-    document.getElementById('news-title').value = item.title;
-    document.getElementById('news-content').value = item.content;
+    document.getElementById('news-title').value = item.title || '';
+    document.getElementById('news-content').value = item.content || '';
     
     const dateInput = (val) => val ? new Date(val).toISOString().split('T')[0] : '';
     document.getElementById('news-start-date').value = dateInput(item.start_date);
@@ -1140,6 +1249,7 @@ function openEditNews(id, { scroll = true } = {}) {
     document.getElementById('news-location').value = item.location || '';
     document.getElementById('news-map-url').value = item.map_url || '';
     document.getElementById('news-application-url').value = item.application_url || '';
+    document.getElementById('news-overview-url').value = item.overview_url || '';
     document.getElementById('news-prefecture').value = item.prefecture || '';
     document.getElementById('news-target-age').value = item.target_age || '';
     document.getElementById('news-participants').value = item.participants || '';
@@ -1159,10 +1269,15 @@ function openEditNews(id, { scroll = true } = {}) {
     });
     syncCompSubdivisions();
 
-    currentImagesBase64 = item.images || [];
-    const previewContainer = document.getElementById('image-preview-container');
-    previewContainer.innerHTML = '';
-    currentImagesBase64.forEach(src => showImagePreview(previewContainer, src, '60px'));
+    // 過去記事の写真(カルーセル用・最大5枚)またはメイン画像の読み込み
+    if (currentNewsCategory === '過去の開催情報') {
+        const pastImgs = item.past_images ? (typeof item.past_images === 'string' ? JSON.parse(item.past_images) : item.past_images) : [];
+        const mainImgs = item.images ? (typeof item.images === 'string' ? JSON.parse(item.images) : item.images) : [];
+        currentImagesBase64 = (pastImgs && pastImgs.length > 0) ? pastImgs : (mainImgs || []);
+    } else {
+        currentImagesBase64 = item.images ? (typeof item.images === 'string' ? JSON.parse(item.images) : item.images) : [];
+    }
+    renderNewsImagePreviews();
 
     currentPosterBase64 = item.poster_image || null;
     const posterPreviewContainer = document.getElementById('poster-preview-container');
@@ -1172,8 +1287,9 @@ function openEditNews(id, { scroll = true } = {}) {
     const commentsContainer = document.getElementById('comments-container');
     if (commentsContainer) {
         commentsContainer.innerHTML = '';
-        if (item.participant_comments && Array.isArray(item.participant_comments)) {
-            item.participant_comments.forEach(c => {
+        const comments = item.participant_comments ? (typeof item.participant_comments === 'string' ? JSON.parse(item.participant_comments) : item.participant_comments) : [];
+        if (Array.isArray(comments)) {
+            comments.forEach(c => {
                 const input = document.createElement('textarea');
                 input.className = 'news-participant-comment';
                 input.rows = 3;
@@ -1196,7 +1312,6 @@ function openEditNews(id, { scroll = true } = {}) {
     // Always show form on edit
     document.getElementById('news-form').style.display = 'block';
     document.getElementById('news-form-title').style.display = 'block';
-    document.getElementById('past-notice-msg').style.display = 'none';
     
     // Scroll to form smoothly
     if (scroll) document.getElementById('news-form').scrollIntoView({ behavior: 'smooth' });
@@ -1206,9 +1321,14 @@ async function handleNewsSubmit(e) {
     e.preventDefault();
 
     let id = document.getElementById('news-id').value;
-    let title = document.getElementById('news-title').value;
+    let title = document.getElementById('news-title').value.trim();
     let content = document.getElementById('news-content').value;
     let category = currentNewsCategory;
+
+    if (!title) {
+        alert('タイトルを入力してください。');
+        return;
+    }
 
     let start_date = document.getElementById('news-start-date').value || null;
     let start_time = document.getElementById('news-start-time').value || null;
@@ -1236,38 +1356,23 @@ async function handleNewsSubmit(e) {
     let is_past = false;
 
     if (currentNewsCategory === '過去の開催情報') {
-        if (!id) {
-            alert('アーカイブする大会を選択してください。');
-            return;
-        }
-        const item = newsData.find(n => String(n.id) === String(id));
-        if (item) {
-            category = '今期の開催情報';
-            title = item.title;
-            content = item.content;
-            is_past = true;
-            past_images = images;
-            images = item.images; // retain existing main images
-            poster_image = item.poster_image; // retain existing poster image
-            // アーカイブ時はフォームの日時・場所・URL等の入力欄が隠れているため、
-            // 元の記事の値をそのまま引き継ぐ(そうしないと空欄で上書きされて消えてしまう)
-            start_date = item.start_date || null;
-            start_time = item.start_time || null;
-            end_time = item.end_time || null;
-            is_tentative = item.is_tentative || false;
-            location = item.location || null;
-            map_url = item.map_url || null;
-            application_url = item.application_url || null;
-            overview_url = item.overview_url || null;
-            target_age = item.target_age || null;
-            divisions = item.divisions || [];
-            // participants(参加人数)はアーカイブ時に新しく入力する値をそのまま使う
+        is_past = true;
+        past_images = images; // 過去の様子写真(カルーセル用)
+        // 元記事がある場合は既存のカテゴリを尊重(今期の開催情報または過去の開催情報)
+        const existingItem = id ? newsData.find(n => String(n.id) === String(id)) : null;
+        if (existingItem) {
+            category = existingItem.category || '過去の開催情報';
+            if (!poster_image && existingItem.poster_image) {
+                poster_image = existingItem.poster_image;
+            }
+        } else {
+            category = '過去の開催情報';
         }
     } else {
         past_images = null;
     }
 
-    const method = id && currentNewsCategory !== '過去の開催情報' ? 'PUT' : (currentNewsCategory === '過去の開催情報' ? 'PUT' : 'POST');
+    const method = id ? 'PUT' : 'POST';
     const payload = {
         id, category, title, content,
         start_date, start_time, end_time, is_tentative, location, map_url, application_url, overview_url, prefecture,

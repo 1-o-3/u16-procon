@@ -539,18 +539,150 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==============================
+// 会期(日本の年度：4/1〜翌年3/31)の計算
+// ==============================
+function getFiscalYearRange(date = new Date()) {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // 1-12
+    const fiscalYear = month >= 4 ? year : year - 1;
+    const start = new Date(fiscalYear, 3, 1, 0, 0, 0); // 4月1日 00:00:00
+    const end = new Date(fiscalYear + 1, 2, 31, 23, 59, 59, 999); // 翌年3月31日 23:59:59
+    return { fiscalYear, start, end };
+}
+
+// ==============================
+// カルーセル (最大5枚のスライダー) コンポーネント
+// ==============================
+let u16CarouselCounter = 0;
+
+function createCarouselHtml(images) {
+    if (!images || !Array.isArray(images) || images.length === 0) return '';
+    // 最大5枚までに制限
+    const imgs = images.slice(0, 5);
+    const id = `u16-carousel-${++u16CarouselCounter}`;
+
+    if (imgs.length === 1) {
+        return `
+            <div class="u16-carousel single-image" style="background: transparent; box-shadow: none;">
+                <div class="carousel-viewport" style="height: auto; max-height: 400px; border-radius: 14px; overflow: hidden; background: #0f172a;">
+                    <img src="${imgs[0]}" alt="大会の様子" style="width: 100%; max-height: 400px; object-fit: contain; display: block; border-radius: 14px;">
+                </div>
+            </div>
+        `;
+    }
+
+    const slidesHtml = imgs.map((src, i) => `
+        <div class="carousel-slide" data-index="${i}">
+            <img src="${src}" alt="大会の様子 ${i + 1}" loading="lazy">
+        </div>
+    `).join('');
+
+    const dotsHtml = imgs.map((_, i) => `
+        <button type="button" class="carousel-dot ${i === 0 ? 'active' : ''}" data-index="${i}" aria-label="スライド ${i + 1}"></button>
+    `).join('');
+
+    return `
+        <div class="u16-carousel" id="${id}" data-total="${imgs.length}">
+            <div class="carousel-viewport">
+                <div class="carousel-track">
+                    ${slidesHtml}
+                </div>
+            </div>
+            <button type="button" class="carousel-btn prev" aria-label="前の写真">‹</button>
+            <button type="button" class="carousel-btn next" aria-label="次の写真">›</button>
+            <div class="carousel-dots">
+                ${dotsHtml}
+            </div>
+            <div class="carousel-counter">1 / ${imgs.length}</div>
+        </div>
+    `;
+}
+
+function initCarousels(container) {
+    if (!container) return;
+    container.querySelectorAll('.u16-carousel:not(.single-image)').forEach(carousel => {
+        if (carousel.dataset.initialized) return;
+        carousel.dataset.initialized = 'true';
+
+        const track = carousel.querySelector('.carousel-track');
+        const dots = carousel.querySelectorAll('.carousel-dot');
+        const prevBtn = carousel.querySelector('.carousel-btn.prev');
+        const nextBtn = carousel.querySelector('.carousel-btn.next');
+        const counter = carousel.querySelector('.carousel-counter');
+        const total = parseInt(carousel.dataset.total, 10);
+        let currentIndex = 0;
+
+        function updateCarousel(index) {
+            currentIndex = (index + total) % total;
+            track.style.transform = `translateX(-${currentIndex * 100}%)`;
+            dots.forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === currentIndex);
+            });
+            if (counter) {
+                counter.textContent = `${currentIndex + 1} / ${total}`;
+            }
+        }
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateCarousel(currentIndex - 1);
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateCarousel(currentIndex + 1);
+            });
+        }
+
+        dots.forEach(dot => {
+            dot.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const idx = parseInt(dot.dataset.index, 10);
+                updateCarousel(idx);
+            });
+        });
+
+        // モバイル タッチスワイプ対応
+        let startX = 0;
+        let isSwiping = false;
+        carousel.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isSwiping = true;
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', (e) => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            const endX = e.changedTouches[0].clientX;
+            const diffX = endX - startX;
+            if (Math.abs(diffX) > 40) {
+                if (diffX < 0) updateCarousel(currentIndex + 1);
+                else updateCarousel(currentIndex - 1);
+            }
+        }, { passive: true });
+    });
+}
+
+// ==============================
 // 「今期の開催情報」セクション
 // ==============================
 document.addEventListener('DOMContentLoaded', async () => {
     const container = document.getElementById('home-current-container');
     if (!container) return;
 
+    const { fiscalYear, start: fiscalStart, end: fiscalEnd } = getFiscalYearRange();
+
     try {
-        let data = [];
+        let currentEvents = [];
         try {
             const response = await fetch('/api/news?category=' + encodeURIComponent('今期の開催情報'));
             if (response.ok) {
-                data = await response.json();
+                currentEvents = await response.json();
             } else {
                 throw new Error('API fetch failed');
             }
@@ -559,108 +691,183 @@ document.addEventListener('DOMContentLoaded', async () => {
             const local = localStorage.getItem('mockNewsData');
             if (local) {
                 const allNews = JSON.parse(local);
-                data = allNews.filter(n => n.category === '今期の開催情報' && !n.is_past);
+                currentEvents = allNews.filter(n => n.category === '今期の開催情報');
             }
         }
 
-        if (data.length === 0) {
+        // もし「今期の開催情報」にデータがない場合、または過去にアーカイブ移行された場合、
+        // 過去の開催情報からも今期の会期内(4/1〜翌3/31)にある大会を補完して探す
+        if (currentEvents.length === 0) {
+            try {
+                const pastRes = await fetch('/api/news?category=' + encodeURIComponent('過去の開催情報'));
+                if (pastRes.ok) {
+                    const pastNews = await pastRes.json();
+                    const inFiscal = pastNews.filter(item => {
+                        if (!item.start_date) return false;
+                        const d = new Date(item.start_date);
+                        return d >= fiscalStart && d <= fiscalEnd;
+                    });
+                    if (inFiscal.length > 0) {
+                        currentEvents = inFiscal;
+                    }
+                }
+            } catch (err) {
+                console.log("Could not check past events for fiscal year", err);
+            }
+        }
+
+        // 今期会期内の大会があるかチェック
+        const fiscalEvent = currentEvents.find(item => {
+            if (!item.start_date) return true; // 日程未確定でも今期の枠として扱う
+            const d = new Date(item.start_date);
+            return d >= fiscalStart && d <= fiscalEnd;
+        }) || currentEvents[0];
+
+        if (!fiscalEvent) {
             container.innerHTML = `
                 <div class="glass" style="text-align: center; padding: 40px;">
-                    <h3 style="color: var(--text-main); margin-bottom: 10px;">2026年度 大会概要</h3>
+                    <h3 style="color: var(--text-main); margin-bottom: 10px;">${fiscalYear}年度 大会概要</h3>
                     <p style="color: var(--text-dim);">現在開催準備を進めております。詳細が決まり次第お知らせします。</p>
                 </div>`;
             return;
         }
 
         container.innerHTML = '';
-        // 今期の開催情報は1件のみ掲載する(APIは新しい順なので先頭が最新。以前の重複投稿が残っていても表示しない)
-        data.slice(0, 1).forEach(item => {
-            // 1大会ごとに「ポスター(枠なし)」と「詳細情報のカード」を別々に縦に並べる
-            const eventEl = document.createElement('div');
-            eventEl.className = 'reveal-on-scroll';
-            eventEl.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
+        const item = fiscalEvent;
 
-            if (item.poster_image) {
-                const poster = document.createElement('img');
-                poster.src = item.poster_image;
-                poster.alt = `${item.title} ポスター`;
-                poster.style.cssText = 'width: 100%; max-width: 560px; display: block; margin: 0 auto;';
-                eventEl.appendChild(poster);
-            }
+        // 大会が開催済みかどうかの判定 (当日の日付を過ぎているか、またはis_pastがtrue)
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const eventDate = item.start_date ? new Date(item.start_date) : null;
+        const isHeld = (eventDate && eventDate < now) || item.is_past === true;
 
-            const div = document.createElement('div');
-            div.className = 'glass';
-            div.style.padding = '25px';
+        const eventEl = document.createElement('div');
+        eventEl.className = 'reveal-on-scroll';
+        eventEl.style.cssText = 'display: flex; flex-direction: column; gap: 20px;';
 
-            let html = '';
+        // 会期中に開催済みの場合：「今期は#月#日に開催されました」バナーを表示
+        if (isHeld && eventDate) {
+            const m = eventDate.getMonth() + 1;
+            const d = eventDate.getDate();
+            const banner = document.createElement('div');
+            banner.className = 'fiscal-event-banner';
+            banner.innerHTML = `
+                <div class="fiscal-event-banner-header">
+                    <span class="fiscal-badge">✨ ${fiscalYear}年度大会 開催終了</span>
+                    <div class="fiscal-date-highlight">今期は <strong>${m}月${d}日</strong> に開催されました</div>
+                </div>
+                <p class="fiscal-banner-desc">
+                    たくさんのご参加・ご声援をいただき、誠にありがとうございました！当日の様子や大会詳細は下記をご覧ください。
+                </p>
+            `;
+            eventEl.appendChild(banner);
+        }
 
-            // Title
-            html += `<h3 style="font-size: 1.3rem; color: var(--text-main); font-weight: 700; margin-bottom: 12px;">${item.title}</h3>`;
+        // ポスター画像
+        if (item.poster_image) {
+            const poster = document.createElement('img');
+            poster.src = item.poster_image;
+            poster.alt = `${item.title} ポスター`;
+            poster.style.cssText = 'width: 100%; max-width: 560px; display: block; margin: 0 auto; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);';
+            eventEl.appendChild(poster);
+        }
 
-            // Event details grid
-            let detailsHtml = '';
-            if (item.start_date) {
-                const dateStr = new Date(item.start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
-                const timeStr = item.start_time ? ` ${item.start_time}` : '';
-                const endStr = item.end_time ? ` 〜 ${item.end_time}` : '';
-                const tentStr = item.is_tentative ? ' <span style="background: var(--secondary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px;">予定</span>' : '';
-                detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">📅 日時</span><span style="color: var(--text-main);">${dateStr}${timeStr}${endStr}${tentStr}</span></div>`;
-            }
-            if (item.location) {
-                const locHtml = `<a href="${item.map_url || buildMapSearchUrl(item.location)}" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline;">${item.location}</a>`;
-                detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">📍 会場</span><span style="color: var(--text-main);">${locHtml}</span></div>`;
-            }
-            if (item.target_age) {
-                detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">👤 対象</span><span style="color: var(--text-main);">${item.target_age}</span></div>`;
-            }
-            if (item.divisions && item.divisions.length > 0) {
-                let divList = typeof item.divisions === 'string' ? JSON.parse(item.divisions) : item.divisions;
-                if (divList && divList.length > 0) {
-                    const hasSubdivision = divList.some(d => d.includes('競技部門 ('));
-                    if (hasSubdivision) {
-                        divList = divList.filter(d => d !== '競技部門');
-                    }
+        const div = document.createElement('div');
+        div.className = 'glass';
+        div.style.padding = '25px';
+
+        let html = '';
+
+        // Title
+        html += `<h3 style="font-size: 1.35rem; color: var(--text-main); font-weight: 700; margin-bottom: 14px;">${item.title}</h3>`;
+
+        // Event details grid
+        let detailsHtml = '';
+        if (item.start_date) {
+            const dateStr = new Date(item.start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+            const timeStr = item.start_time ? ` ${item.start_time}` : '';
+            const endStr = item.end_time ? ` 〜 ${item.end_time}` : '';
+            const statusBadge = isHeld 
+                ? ' <span style="background: var(--text-dim); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px;">開催終了</span>'
+                : (item.is_tentative ? ' <span style="background: var(--secondary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px;">予定</span>' : '');
+            detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">📅 日時</span><span style="color: var(--text-main);">${dateStr}${timeStr}${endStr}${statusBadge}</span></div>`;
+        }
+        if (item.location) {
+            const locHtml = `<a href="${item.map_url || buildMapSearchUrl(item.location)}" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline;">${item.location}</a>`;
+            detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">📍 会場</span><span style="color: var(--text-main);">${locHtml}</span></div>`;
+        }
+        if (item.target_age) {
+            detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">👤 対象</span><span style="color: var(--text-main);">${item.target_age}</span></div>`;
+        }
+        if (item.participants) {
+            detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">👥 参加者</span><span style="color: var(--text-main);">${item.participants}名</span></div>`;
+        }
+        if (item.divisions && item.divisions.length > 0) {
+            let divList = typeof item.divisions === 'string' ? JSON.parse(item.divisions) : item.divisions;
+            if (divList && divList.length > 0) {
+                const hasSubdivision = divList.some(d => d.includes('競技部門 ('));
+                if (hasSubdivision) {
+                    divList = divList.filter(d => d !== '競技部門');
                 }
-                detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">🏆 部門</span><span style="color: var(--text-main);">${divList.join('・')}</span></div>`;
             }
+            detailsHtml += `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700; min-width: 70px;">🏆 部門</span><span style="color: var(--text-main);">${divList.join('・')}</span></div>`;
+        }
 
-            if (detailsHtml) {
-                html += `<div style="display: flex; flex-direction: column; gap: 8px; padding: 15px; background: var(--primary-pale); border-radius: 10px; margin-bottom: 15px;">${detailsHtml}</div>`;
-            }
+        if (detailsHtml) {
+            html += `<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--primary-pale); border-radius: 12px; margin-bottom: 18px;">${detailsHtml}</div>`;
+        }
 
-            // Content
-            if (item.content) {
-                html += `<p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap; line-height: 1.7;">${item.content}</p>`;
-            }
+        // Content
+        if (item.content) {
+            html += `<p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap; line-height: 1.7; margin-bottom: 15px;">${item.content}</p>`;
+        }
 
-            // Images
-            if (item.images && item.images.length > 0) {
-                const imgs = typeof item.images === 'string' ? JSON.parse(item.images) : item.images;
-                html += `<div style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px;">
-                    ${imgs.map(src => `<img src="${src}" style="height: 150px; border-radius: 10px; object-fit: cover;">`).join('')}
+        // カルーセル画像 (最大5枚)
+        const pastImgs = item.past_images ? (typeof item.past_images === 'string' ? JSON.parse(item.past_images) : item.past_images) : [];
+        const mainImgs = item.images ? (typeof item.images === 'string' ? JSON.parse(item.images) : item.images) : [];
+        const combinedImgs = [...pastImgs, ...mainImgs];
+        const uniqueImgs = Array.from(new Set(combinedImgs)).slice(0, 5);
+        if (uniqueImgs.length > 0) {
+            html += `
+                <div style="margin-top: 20px;">
+                    <h4 style="color: var(--primary); font-size: 1rem; font-weight: 700; margin-bottom: 8px;">📷 大会の様子 (写真)</h4>
+                    ${createCarouselHtml(uniqueImgs)}
+                </div>
+            `;
+        }
+
+        // Participant comments
+        if (item.participant_comments) {
+            const comments = typeof item.participant_comments === 'string' ? JSON.parse(item.participant_comments) : item.participant_comments;
+            if (comments && comments.length > 0) {
+                html += `<div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--primary-light);">
+                    <p style="color: var(--primary); font-size: 0.9rem; font-weight: 700; margin-bottom: 10px;">💬 参加者の声</p>
+                    ${comments.map(c => `<div style="background: var(--primary-pale); border-radius: 8px; padding: 10px 15px; margin-bottom: 8px; color: var(--text-dim); font-size: 0.9rem; font-style: italic;">「${c}」</div>`).join('')}
                 </div>`;
             }
+        }
 
-            // Action buttons
-            let btnsHtml = '';
-            if (item.application_url) {
-                btnsHtml += `<a href="${item.application_url}" target="_blank" class="btn-glow" style="padding: 10px 20px; font-size: 0.9rem;">申し込みはこちら</a>`;
-            }
-            if (item.overview_url) {
-                btnsHtml += `<a href="${item.overview_url}" target="_blank" class="btn-outline" style="padding: 10px 20px; font-size: 0.9rem;">詳細を見る</a>`;
-            }
-            if (btnsHtml) {
-                html += `<div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">${btnsHtml}</div>`;
-            }
+        // Action buttons (開催前のみ申し込みボタンを表示、開催後は詳細ボタンのみ)
+        let btnsHtml = '';
+        if (!isHeld && item.application_url) {
+            btnsHtml += `<a href="${item.application_url}" target="_blank" class="btn-glow" style="padding: 10px 22px; font-size: 0.95rem;">申し込みはこちら</a>`;
+        }
+        if (item.overview_url) {
+            btnsHtml += `<a href="${item.overview_url}" target="_blank" class="btn-outline" style="padding: 10px 22px; font-size: 0.95rem;">大会詳細を見る ↗</a>`;
+        }
+        if (btnsHtml) {
+            html += `<div style="margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap;">${btnsHtml}</div>`;
+        }
 
-            div.innerHTML = html;
-            eventEl.appendChild(div);
-            container.appendChild(eventEl);
-            observer.observe(eventEl);
-        });
+        div.innerHTML = html;
+        eventEl.appendChild(div);
+        container.appendChild(eventEl);
+        initCarousels(eventEl);
+        observer.observe(eventEl);
         renderPdfImages(container);
 
     } catch (e) {
+        console.error(e);
         container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">開催情報の読み込みに失敗しました。</p>';
     }
 });
@@ -707,15 +914,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             let html = '';
 
             // Title and date
-            html += `<h3 style="font-size: 1.2rem; color: var(--text-main); font-weight: 700; margin-bottom: 8px;">${item.title}</h3>`;
+            html += `<h3 style="font-size: 1.25rem; color: var(--text-main); font-weight: 700; margin-bottom: 8px;">${item.title}</h3>`;
             if (item.start_date) {
                 const dateStr = new Date(item.start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
-                html += `<p style="color: var(--primary); font-size: 0.9rem; margin-bottom: 12px;">📅 ${dateStr}</p>`;
+                html += `<p style="color: var(--primary); font-size: 0.9rem; margin-bottom: 12px; font-weight: 600;">📅 ${dateStr}</p>`;
             }
 
             // Content
             if (item.content) {
-                html += `<p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap; line-height: 1.7;">${item.content}</p>`;
+                html += `<p style="color: var(--text-dim); font-size: 0.95rem; white-space: pre-wrap; line-height: 1.7; margin-bottom: 12px;">${item.content}</p>`;
             }
 
             // Event info
@@ -727,37 +934,49 @@ document.addEventListener('DOMContentLoaded', async () => {
                 infoHtml += `<span style="color: var(--text-dim); font-size: 0.85rem;">👥 参加者: ${item.participants}名</span>`;
             }
             if (infoHtml) {
-                html += `<div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">${infoHtml}</div>`;
+                html += `<div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">${infoHtml}</div>`;
             }
 
-            // Past images (gallery)
+            // カルーセル画像 (最大5枚)
             const pastImgs = item.past_images ? (typeof item.past_images === 'string' ? JSON.parse(item.past_images) : item.past_images) : [];
             const mainImgs = item.images ? (typeof item.images === 'string' ? JSON.parse(item.images) : item.images) : [];
-            const allImgs = [...pastImgs, ...mainImgs];
-            if (allImgs.length > 0) {
-                html += `<div style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px;">
-                    ${allImgs.map(src => `<img src="${src}" style="height: 140px; border-radius: 10px; object-fit: cover;">`).join('')}
-                </div>`;
+            const combinedImgs = [...pastImgs, ...mainImgs];
+            const uniqueImgs = Array.from(new Set(combinedImgs)).slice(0, 5);
+
+            if (uniqueImgs.length > 0) {
+                html += `
+                    <div style="margin-top: 15px;">
+                        <h4 style="color: var(--primary); font-size: 0.95rem; font-weight: 700; margin-bottom: 6px;">📷 大会の様子 (写真)</h4>
+                        ${createCarouselHtml(uniqueImgs)}
+                    </div>
+                `;
             }
 
             // Participant comments
             if (item.participant_comments) {
                 const comments = typeof item.participant_comments === 'string' ? JSON.parse(item.participant_comments) : item.participant_comments;
                 if (comments && comments.length > 0) {
-                    html += `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--primary-light);">
+                    html += `<div style="margin-top: 18px; padding-top: 15px; border-top: 1px dashed var(--primary-light);">
                         <p style="color: var(--primary); font-size: 0.85rem; font-weight: 700; margin-bottom: 8px;">💬 参加者の声</p>
                         ${comments.map(c => `<div style="background: var(--primary-pale); border-radius: 8px; padding: 10px 15px; margin-bottom: 6px; color: var(--text-dim); font-size: 0.9rem; font-style: italic;">「${c}」</div>`).join('')}
                     </div>`;
                 }
             }
 
+            // Overview link
+            if (item.overview_url) {
+                html += `<div style="margin-top: 15px;"><a href="${item.overview_url}" target="_blank" rel="noopener" class="btn-outline" style="padding: 6px 16px; font-size: 0.85rem;">詳細を見る ↗</a></div>`;
+            }
+
             div.innerHTML = html;
             container.appendChild(div);
+            initCarousels(div);
             observer.observe(div);
         });
         renderPdfImages(container);
 
     } catch (e) {
+        console.error(e);
         container.innerHTML = '<p style="text-align: center; color: #ff4b4b; padding: 20px;" class="glass">過去の開催情報の読み込みに失敗しました。</p>';
     }
 });

@@ -56,14 +56,12 @@ export default async function handler(request, response) {
                     SELECT * FROM news_table 
                     WHERE category = '過去の開催情報' 
                        OR (category = '今期の開催情報' AND (is_past = TRUE OR start_date < CURRENT_DATE))
-                    ORDER BY created_at DESC;
+                    ORDER BY COALESCE(start_date, created_at::date) DESC, created_at DESC;
                 `;
             } else if (category === '今期の開催情報') {
                 result = await sql`
                     SELECT * FROM news_table 
-                    WHERE category = '今期の開催情報' 
-                      AND is_past = FALSE
-                      AND (start_date IS NULL OR start_date >= CURRENT_DATE)
+                    WHERE category = '今期の開催情報'
                     ORDER BY created_at DESC;
                 `;
             } else if (category) {
@@ -79,13 +77,11 @@ export default async function handler(request, response) {
             if (!category || !title) throw new Error('Missing required fields');
 
             // 今期の開催情報は1件のみ(編集式)。HPに表示中の大会がある間は新規投稿を受け付けない
-            // (「今期」の判定は GET の今期の開催情報と同じ条件)
             if (category === '今期の開催情報') {
                 const active = await sql`
                     SELECT id FROM news_table
                     WHERE category = '今期の開催情報'
                       AND is_past = FALSE
-                      AND (start_date IS NULL OR start_date >= CURRENT_DATE)
                     LIMIT 1;
                 `;
                 if (active.rowCount > 0) {
