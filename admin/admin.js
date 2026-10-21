@@ -934,8 +934,8 @@ function updateNewsFormVisibility(category, isEditing = false) {
         }
     }
 
-    // アーカイブ大会選択：新規登録時のみ表示、編集時は隠す
-    s('.field-migration').display = (isPast && !isEditing) ? 'block' : 'none';
+    // 開催日を過ぎた大会は自動で過去の開催情報に表示されるため、手動でアーカイブする大会を選ぶ欄は使わない
+    s('.field-migration').display = 'none';
     s('.field-comments').display = isPast ? 'block' : 'none';
 
     // タイトルと本文は常に表示（過去記事でも直接編集可能！）
@@ -949,8 +949,9 @@ function updateNewsFormVisibility(category, isEditing = false) {
         if (isPast) {
             noticeEl.style.display = 'block';
             noticeEl.textContent = isEditing
-                ? '※ 過去の開催情報を編集しています。各項目を変更して「更新する」を押してください。'
-                : '※ 今期開催された大会を選んで引き継ぐか、各入力欄に直接入力して「過去の大会としてアーカイブする」を押してください。';
+                ? '※ 過去の開催情報を編集しています。写真(カルーセル・最大5枚)・参加人数・参加者の声などを変更して「更新する」を押してください。'
+                : '※ 今期の大会は開催日を過ぎると自動で下の一覧に表示されます。一覧の「編集」から写真(最大5枚)・参加人数・参加者の声を追加できます。\n　 このサイトで管理する前の大会など、一覧に無い大会は下の入力欄から直接登録できます。';
+            noticeEl.style.whiteSpace = 'pre-line';
         } else {
             noticeEl.style.display = 'none';
         }
@@ -1247,16 +1248,63 @@ function applySingleCurrentMode() {
     }
 }
 
+const NEWS_TABLE_HEAD_DEFAULT = `
+    <th style="width: 50px;">ID</th>
+    <th>タイトル</th>
+    <th style="width: 180px;">投稿日時</th>
+    <th style="width: 150px;">操作</th>`;
+const NEWS_TABLE_HEAD_PAST = `
+    <th style="width: 50px;">ID</th>
+    <th style="width: 120px;">開催日</th>
+    <th>タイトル</th>
+    <th style="width: 150px;">状態</th>
+    <th style="width: 80px;">写真</th>
+    <th style="width: 150px;">操作</th>`;
+
+// 「今期の開催情報」から開催日を過ぎて自動で過去の開催情報に表示されている記事か
+function isAutoReflectedPast(item) {
+    return item.category === '今期の開催情報';
+}
+
 function renderNewsTable(data) {
     const tbody = document.getElementById('news-tbody');
+    const isPast = currentNewsCategory === '過去の開催情報';
+    const head = document.getElementById('news-table-head');
+    if (head) head.innerHTML = isPast ? NEWS_TABLE_HEAD_PAST : NEWS_TABLE_HEAD_DEFAULT;
     tbody.innerHTML = '';
 
     if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">まだ記事がありません</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${isPast ? 6 : 4}" style="text-align: center;">${isPast ? 'まだ過去の開催情報がありません(開催日を過ぎた大会は自動でここに表示されます)' : 'まだ記事がありません'}</td></tr>`;
         return;
     }
 
-    data.forEach(item => {
+    if (isPast) {
+        data.forEach(item => {
+            const d = toLocalDate(item.start_date);
+            const dateStr = d ? d.toLocaleDateString('ja-JP') : '未設定';
+            const photos = Array.isArray(item.past_images) && item.past_images.length > 0
+                ? item.past_images.length
+                : (Array.isArray(item.images) ? item.images.length : 0);
+            const status = isAutoReflectedPast(item)
+                ? `<span style="background: var(--primary-pale); color: var(--primary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700;">今期から自動反映</span><div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">${newsFiscalYear(item)}年度</div>`
+                : '<span style="background: #eef0f3; color: var(--text-dim); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700;">アーカイブ</span>';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.id || '-'}</td>
+                <td>${dateStr}</td>
+                <td>${item.title}</td>
+                <td>${status}</td>
+                <td style="color: ${photos > 0 ? 'var(--text-main)' : 'var(--text-dim)'};">${photos} / 5枚</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="action-btn edit-news-btn" data-id="${item.id}">編集</button>
+                        <button class="action-btn delete delete-news-btn" data-id="${item.id}">削除</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } else data.forEach(item => {
         const dateStr = item.created_at ? new Date(item.created_at).toLocaleString('ja-JP') : new Date().toLocaleString('ja-JP');
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -1531,7 +1579,11 @@ async function handleNewsSubmit(e) {
 }
 
 async function deleteNews(id) {
-    if (!confirm('本当にこの記事を削除しますか？')) return;
+    const item = newsData.find(n => String(n.id) === String(id));
+    const message = item && currentNewsCategory === '過去の開催情報' && isAutoReflectedPast(item)
+        ? 'この大会は「今期の開催情報」から自動で表示されている記事です。\n削除すると、HPの「今期の開催情報」からも消えます。本当に削除しますか？'
+        : '本当にこの記事を削除しますか？';
+    if (!confirm(message)) return;
 
     try {
         const response = await fetch('/api/news', {
